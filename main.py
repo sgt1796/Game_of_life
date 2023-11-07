@@ -104,6 +104,7 @@ def main():
         rgba_array[current_grid == 1, :3] = np.array([128 / 255, 0, 128 / 255])  # RGB for purple
 
         # Use the fade_grid as the alpha channel
+        # Use the fade_grid as the alpha channel
         rgba_array[..., 3] = fade_grid
 
         return rgba_array
