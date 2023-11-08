@@ -5,6 +5,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.patches import Rectangle
 
 
 # This is a python implementation of Conway's game of life
@@ -27,6 +28,7 @@ def _init_grid(n, ratio):
 
     # transform the 1D vector to 2D matrix, return the matrix
     return vector.reshape((n, n))
+
 
 # Function to apply Conway's Game of Life rules
 def next_gen(grid):
@@ -63,45 +65,16 @@ def next_gen(grid):
     return next_grid
 
 
-# Load the JSON file into a Python dictionary
-def load_color_dict(json_filename):
-    with open(json_filename, 'r') as file:
-        color_dict = json.load(file)
-    return color_dict
-
-
-# Function to select colors
-def select_color(color_dict, color_name):
-    if color_name in color_dict:
-        # Get the RGB values for the given color name
-        color_rgb = color_dict[color_name]
-        # Normalize the RGB values for matplotlib
-        normalized_color_rgb = [value / 255 for value in color_rgb]
-        return normalized_color_rgb
-    else:
-        # Raise an error if the color name is not found in the dictionary
-        raise ValueError(f"Color '{color_name}' not found in the dictionary.")
-
-
 def main():
     # np.random.seed(123)
     N = 120  # Define the size of the grid.
-    global current_grid, fade_grid, img, color
-    current_grid = _init_grid(N, 0.3).astype(float)
+    global current_grid, fade_grid, img, color, is_dragging, tail_color, is_running, ani
+    current_grid = _init_grid(N, 0.1).astype(float)
     fade_grid = np.zeros_like(current_grid)  # Grid to track the fade levels
 
-    # Load color selections
-    color_name = 'grey'  # user-selected foreground color (cell color)
-    bg_color_name = 'white'  # user-selected background color
-    tail_color_name = 'lime'  # user-selected tail color
-
-
-    color_dict = load_color_dict('colors.json')
-    # Use the select_colors function to get the normalized RGB values
-    color = select_color(color_dict, color_name)
-    bg_color = select_color(color_dict, bg_color_name)
-    tail_color = select_color(color_dict, tail_color_name)
-
+    # Global flag to track click-and-drag state
+    is_dragging = False
+    is_running = True
 
     # manual override -- for aesthetic improvement
     color = np.array([46, 204, 113]) / 255.0  # Emerald
@@ -109,6 +82,7 @@ def main():
     tail_color = np.array([171, 235, 198]) / 255.0  # Mint Cream
 
     # Set up the figure, adjusting aesthetics
+    global fig, ax
     fig, ax = plt.subplots()
     ax.axis('off')  # Turn off the axis.
     plt.title('Conway\'s Game of Life', fontsize=24, color='mediumseagreen', fontweight='heavy', style='italic', family='fantasy', pad=20)
@@ -119,8 +93,20 @@ def main():
     # Use imshow to display the initial grid with custom colors
     img = ax.imshow(current_grid, interpolation='nearest')
 
+    # Glow boarder effect
+    # Draw the border
+    # Set the properties of the neon border
+    border_color = 'grey'  # Color of the border
+    border = Rectangle((-0.5, -0.5), N, N, linewidth=2, edgecolor=border_color, facecolor='none', alpha=0.9)
+    ax.add_patch(border)
+
+    # A rectangle with no glow effect
+    border = Rectangle((-0.5, -0.5), N, N, linewidth=2, edgecolor=border_color, facecolor='none')
+    ax.add_patch(border)
+
+
     # Function to update the alpha values for fading effect
-    def update_alpha(grid, fade_grid, rate=0.1):
+    def update_alpha(grid, fade_grid, rate=0.33):
         # Alive cells are reset to maximum value
         fade_grid[grid == 1] = 1
         # Dead cells decay their alpha value
@@ -149,7 +135,9 @@ def main():
 
     # Use this function in your animation update step
     def update(*args):
-        global current_grid, fade_grid, img, color
+        global current_grid, fade_grid, img, color, is_running
+        if not is_running:
+            return img,
         # Calculate the next generation
         current_grid = next_gen(current_grid)
         # Update the fade grid (this logic will depend on how you calculate fading)
@@ -161,6 +149,66 @@ def main():
         img.set_data(rgba_array)
         return img,
 
+    def get_grid_coord(x, y, ax, grid_size):
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        x_grid = int(grid_size * (x - xlim[0]) / (xlim[1] - xlim[0]))
+        # Invert the y-axis calculation to match the NumPy array indexing
+        y_grid = grid_size - 1 - int(grid_size * (y - ylim[0]) / (ylim[1] - ylim[0]))
+        return x_grid, y_grid
+
+    # Function to handle the mouse click event
+    def on_click(event):
+        global current_grid, img, is_dragging
+        if event.inaxes == ax and event.button == 1:
+            is_dragging = True
+            seed_grid(event)
+
+    # Function to handle the mouse motion event
+    def on_motion(event):
+        global is_dragging
+        if is_dragging and event.inaxes == ax:
+            seed_grid(event)
+
+    # Function to handle the mouse release event
+    def on_release(event):
+        global is_dragging
+        if event.button == 1:
+            is_dragging = False
+
+    # Function to handle key press events
+    def on_key_press(event):
+        global is_running, ani
+        if event.key == ' ':
+            # Toggle running state
+            is_running = not is_running
+            if is_running:
+                ani.event_source.start()
+            else:
+                ani.event_source.stop()
+
+    # Function to update the grid with a new seed based on the event coordinates
+    def seed_grid(event):
+        global current_grid, fade_grid, img
+        x, y = event.xdata, event.ydata
+        i, j = get_grid_coord(x, y, ax, N)
+        if i >= 0 and i < N and j >= 0 and j < N:
+            current_grid[j, i] = 1
+            fade_grid[j, i] = 1
+            update_plot()
+
+    # Function to update the plot
+    def update_plot():
+        global current_grid, fade_grid, img, color, tail_color
+        rgba_array = update_rgba(current_grid, fade_grid, color, tail_color)
+        img.set_data(rgba_array)
+        fig.canvas.draw_idle()
+
+    # Connect the event handlers to the figure
+    fig.canvas.mpl_connect('button_press_event', on_click)
+    fig.canvas.mpl_connect('motion_notify_event', on_motion)
+    fig.canvas.mpl_connect('button_release_event', on_release)
+    fig.canvas.mpl_connect('key_press_event', on_key_press)
     # Set up the animation
     ani = animation.FuncAnimation(fig, update, interval=25, save_count=50)
 
