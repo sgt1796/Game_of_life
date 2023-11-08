@@ -1,11 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-import matplotlib.pyplot
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from matplotlib.colors import ListedColormap
 
 
 # This is a python implementation of Conway's game of life
@@ -64,23 +63,61 @@ def next_gen(grid):
     return next_grid
 
 
+# Load the JSON file into a Python dictionary
+def load_color_dict(json_filename):
+    with open(json_filename, 'r') as file:
+        color_dict = json.load(file)
+    return color_dict
+
+
+# Function to select colors
+def select_color(color_dict, color_name):
+    if color_name in color_dict:
+        # Get the RGB values for the given color name
+        color_rgb = color_dict[color_name]
+        # Normalize the RGB values for matplotlib
+        normalized_color_rgb = [value / 255 for value in color_rgb]
+        return normalized_color_rgb
+    else:
+        # Raise an error if the color name is not found in the dictionary
+        raise ValueError(f"Color '{color_name}' not found in the dictionary.")
+
+
 def main():
-    np.random.seed(123)
-    N = 100  # Define the size of the grid.
-    global current_grid, fade_grid, img
-    current_grid = _init_grid(N, 0.2).astype(float)
+    # np.random.seed(123)
+    N = 120  # Define the size of the grid.
+    global current_grid, fade_grid, img, color
+    current_grid = _init_grid(N, 0.3).astype(float)
     fade_grid = np.zeros_like(current_grid)  # Grid to track the fade levels
 
-    # Create a custom colormap where 0 is white and 1 is purple
-    cmap = ListedColormap(['white', 'orange'])
+    # Load color selections
+    color_name = 'grey'  # user-selected foreground color (cell color)
+    bg_color_name = 'white'  # user-selected background color
+    tail_color_name = 'lime'  # user-selected tail color
+
+
+    color_dict = load_color_dict('colors.json')
+    # Use the select_colors function to get the normalized RGB values
+    color = select_color(color_dict, color_name)
+    bg_color = select_color(color_dict, bg_color_name)
+    tail_color = select_color(color_dict, tail_color_name)
+
+
+    # manual override -- for aesthetic improvement
+    color = np.array([46, 204, 113]) / 255.0  # Emerald
+    bg_color = np.array([34, 47, 62]) / 255.0  # Dark Slate Grey
+    tail_color = np.array([171, 235, 198]) / 255.0  # Mint Cream
 
     # Set up the figure, adjusting aesthetics
     fig, ax = plt.subplots()
     ax.axis('off')  # Turn off the axis.
-    plt.title('Conway\'s Game of Life')
+    plt.title('Conway\'s Game of Life', fontsize=24, color='mediumseagreen', fontweight='heavy', style='italic', family='fantasy', pad=20)
+
+
+    fig.patch.set_facecolor(bg_color)  # Set the background color of the figure
 
     # Use imshow to display the initial grid with custom colors
-    img = ax.imshow(current_grid, cmap=cmap, interpolation='nearest', alpha=fade_grid)
+    img = ax.imshow(current_grid, interpolation='nearest')
 
     # Function to update the alpha values for fading effect
     def update_alpha(grid, fade_grid, rate=0.1):
@@ -93,15 +130,16 @@ def main():
         return fade_grid
 
     # Create an RGBA array based on the current grid and fade_grid
-    def update_rgba(current_grid, fade_grid):
+    def update_rgba(current_grid, fade_grid, RGB_color, RGB_tail_color):
         # Initialize the RGBA array: shape (N, N, 4) with all zeros
         rgba_array = np.zeros((current_grid.shape[0], current_grid.shape[1], 4))
 
         # Set RGB for purple color
-        rgba_array[..., :3] = np.array([128 / 255, 0, 128 / 255])  # RGB for purple
+        rgba_array[..., :3] = RGB_color  # RGB
 
         # Use current_grid to determine where to apply the color
-        rgba_array[current_grid == 1, :3] = np.array([128 / 255, 0, 128 / 255])  # RGB for purple
+        rgba_array[current_grid == 1, :3] = RGB_color  # RGB
+        rgba_array[current_grid == 0, :3] = RGB_tail_color
 
         # Use the fade_grid as the alpha channel
         # Use the fade_grid as the alpha channel
@@ -111,17 +149,15 @@ def main():
 
     # Use this function in your animation update step
     def update(*args):
-        global current_grid, fade_grid, img
+        global current_grid, fade_grid, img, color
         # Calculate the next generation
         current_grid = next_gen(current_grid)
         # Update the fade grid (this logic will depend on how you calculate fading)
         # For example, you might decrease the fade_grid values by some amount here for cells that are dead
         fade_grid = update_alpha(current_grid, fade_grid)
         # Update the RGBA data
-        rgba_array = update_rgba(current_grid, fade_grid)
-        #print(current_grid)
-        #print(fade_grid)
-        #print(rgba_array[..., 3])
+        rgba_array = update_rgba(current_grid, fade_grid, color, tail_color)
+
         img.set_data(rgba_array)
         return img,
 
