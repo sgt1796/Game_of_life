@@ -71,10 +71,12 @@ def main():
 
     # Define the top-right corner for the slider placement
     top_right_x = 0.95  # x position for the rightmost edge of the sliders
-    top_right_y = 0.9  # y position for the top edge of the sliders
+    top_right_y = 0.80  # y position for the top edge of the sliders
     slider_height = 0.2  # the height of the sliders
     slider_width = 0.02  # the width of the sliders
     spacing = 0.01  # spacing between the sliders
+
+
 
     # Set the axes for the RGB sliders for the cell color
     axcolor_r = plt.axes(
@@ -87,7 +89,24 @@ def main():
         [top_right_x - (slider_width + spacing), top_right_y - slider_height, slider_width, slider_height],
         facecolor=axcolor)
 
-    # Create the vertical sliders
+    # Additional offset for the second set of sliders (tail color)
+    additional_offset = slider_height + 2 * spacing + 0.1
+
+    # Set the axes for the RGB sliders for the tail color
+    axcolor_r_tail = plt.axes(
+        [top_right_x - 3 * (slider_width + spacing), top_right_y - slider_height - additional_offset, slider_width,
+         slider_height],
+        facecolor=axcolor)
+    axcolor_g_tail = plt.axes(
+        [top_right_x - 2 * (slider_width + spacing), top_right_y - slider_height - additional_offset, slider_width,
+         slider_height],
+        facecolor=axcolor)
+    axcolor_b_tail = plt.axes(
+        [top_right_x - (slider_width + spacing), top_right_y - slider_height - additional_offset, slider_width,
+         slider_height],
+        facecolor=axcolor)
+
+    # Create the vertical sliders for the cell color
     s_color_r = Slider(axcolor_r, 'R', 0.0, 1.0, valinit=color[0], orientation='vertical')
     s_color_g = Slider(axcolor_g, 'G', 0.0, 1.0, valinit=color[1], orientation='vertical')
     s_color_b = Slider(axcolor_b, 'B', 0.0, 1.0, valinit=color[2], orientation='vertical')
@@ -96,6 +115,27 @@ def main():
     s_color_r.valtext.set_visible(False)
     s_color_g.valtext.set_visible(False)
     s_color_b.valtext.set_visible(False)
+
+    # Place a title horizontally above the cell color sliders
+    fig.text(top_right_x - 1.5 * (slider_width + spacing), top_right_y + 0.045, 'Cell Color',
+             va='bottom', ha='center', color='black', fontsize=10)
+
+    # Create the vertical sliders for tail color
+    s_color_r_tail = Slider(axcolor_r_tail, 'R', 0.0, 1.0, valinit=tail_color[0], orientation='vertical')
+    s_color_g_tail = Slider(axcolor_g_tail, 'G', 0.0, 1.0, valinit=tail_color[1], orientation='vertical')
+    s_color_b_tail = Slider(axcolor_b_tail, 'B', 0.0, 1.0, valinit=tail_color[2], orientation='vertical')
+
+    # Hide the value display (valtext) for each slider
+    s_color_r_tail.valtext.set_visible(False)
+    s_color_g_tail.valtext.set_visible(False)
+    s_color_b_tail.valtext.set_visible(False)
+
+    # Place a title horizontally above the tail color sliders
+    fig.text(top_right_x - 1.5 * (slider_width + spacing), top_right_y - slider_height - additional_offset + 0.25,
+             'Tail Effect Color',
+             va='bottom', ha='center', color='black', fontsize=10)
+
+    # ... [rest of the previous code] ...
 
     # Update function for the slider
     def update_fade_rate(val):
@@ -235,6 +275,19 @@ def main():
     s_color_r.on_changed(update_cell_color)
     s_color_g.on_changed(update_cell_color)
     s_color_b.on_changed(update_cell_color)
+
+    # Callback function to update the tail color
+    def update_tail_color(val):
+        global tail_color
+        tail_color[0] = s_color_r_tail.val
+        tail_color[1] = s_color_g_tail.val
+        tail_color[2] = s_color_b_tail.val
+        update_plot()
+
+    # Register the update function with each slider
+    s_color_r_tail.on_changed(update_tail_color)
+    s_color_g_tail.on_changed(update_tail_color)
+    s_color_b_tail.on_changed(update_tail_color)
 
     # Connect the event handlers to the figure
     fig.canvas.mpl_connect('button_press_event', on_click)
