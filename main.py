@@ -221,10 +221,6 @@ def main():
         img.set_data(rgba_array)
         return img,
 
-    # Adjust the positions of sliders and buttons if needed to prevent overlap
-
-    ax_fade_rate = plt.axes([0.25, 0.01, 0.65, 0.03], facecolor=axcolor)
-    s_fade_rate = widgets.Slider(ax_fade_rate, 'Fade Rate', 0.0, 1.0, valinit=tail_fade_rate)
 
     ax_ratio = plt.axes([0.25, 0.04, 0.65, 0.03], facecolor=axcolor)
     s_ratio = Slider(ax_ratio, 'Seeding Ratio', 0.0, 1.0, valinit=0.1)
