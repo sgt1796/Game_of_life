@@ -5,6 +5,8 @@ import matplotlib.widgets as widgets
 import matplotlib.animation as animation
 from matplotlib.patches import Rectangle
 from matplotlib.widgets import Slider, Button, CheckButtons
+from scipy.signal import convolve2d
+
 
 
 
@@ -16,29 +18,22 @@ def _init_grid(n, ratio):
     np.random.shuffle(vector)
     return vector.reshape((n, n))
 
-
+# Updated next_gen function -- using kernel convolution to make it faster
 def next_gen(grid):
-    # Apply Conway's Game of Life rules
-    N = grid.shape[0]
-    pad_grid = np.zeros((N + 2, N + 2))
-    pad_grid[1:-1, 1:-1] = grid
-    next_grid = grid.copy()
-
-    for i in range(1, N + 1):
-        for j in range(1, N + 1):
-            state = grid[i - 1, j - 1]
-            neighbors = np.sum(pad_grid[(i - 1): (i + 2), (j - 1): (j + 2)]) - state
-            if state and (neighbors < 2 or neighbors > 3):
-                next_grid[i - 1, j - 1] = 0
-            elif state == 0 and neighbors == 3:
-                next_grid[i - 1, j - 1] = 1
-
-    return next_grid
+    # Use convolution to apply the Game of Life rules
+    kernel = np.array([[1, 1, 1],
+                       [1, 0, 1],
+                       [1, 1, 1]])
+    neighbor_count = convolve2d(grid, kernel, mode="same")
+    birth = (neighbor_count == 3) & (grid == 0)
+    survival = ((neighbor_count == 2) | (neighbor_count == 3)) & (grid == 1)
+    grid_next = np.where(birth | survival, 1, 0)
+    return grid_next.astype(float)
 
 
 def main():
-    N = 100
-    global current_grid, fade_grid, img, color, is_dragging, tail_color, is_running, ani, tail_fade_rate, selected_color
+    N = 250
+    global current_grid, fade_grid, img, color, is_dragging, tail_color, is_running, ani, tail_fade_rate, selected_color, perc_text
     current_grid = _init_grid(N, 0.1).astype(float)
     fade_grid = np.zeros_like(current_grid)
 
@@ -59,6 +54,10 @@ def main():
               family='fantasy', pad=20)
     fig.patch.set_facecolor(bg_color)
     img = ax.imshow(current_grid, interpolation='nearest')
+
+    # the percentage of cells living on the grid space
+    perc_text = ax.text(0.5, 0.95, '', transform=ax.transAxes, fontsize=22, color='white', ha='center', va='center',
+                        family='Comic Sans MS')
 
     # Border for aesthetic
     border_color = 'grey'
@@ -245,15 +244,23 @@ def main():
 
     # Use this function in your animation update step
     def update(*args):
-        global current_grid, fade_grid, img, color, is_running
+        global current_grid, fade_grid, img, color, is_running, perc_text
         if not is_running:
             return img,
         current_grid = next_gen(current_grid)
         fade_grid = update_alpha(current_grid, fade_grid, tail_fade_rate)
         rgba_array = update_rgba(current_grid, fade_grid, color, tail_color)
         img.set_data(rgba_array)
-        # No need to call toggle_middle_lines here
-        return img,
+
+        # Calculate the percentage of living cells
+        living_cells = np.sum(current_grid == 1)
+        total_cells = current_grid.size
+        percentage = (living_cells / total_cells) * 100
+
+        # Update the percentage text
+        perc_text.set_text(f'Living Cells: {percentage:.2f}%')
+
+        return img, perc_text
 
     ax_ratio = plt.axes([0.25, 0.04, 0.65, 0.03], facecolor=axcolor)
     s_ratio = Slider(ax_ratio, 'Seeding Ratio', 0.0, 1.0, valinit=0.1)
