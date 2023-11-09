@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.widgets as widgets
 import matplotlib.animation as animation
 from matplotlib.patches import Rectangle
-from matplotlib.widgets import Slider, Button
+from matplotlib.widgets import Slider, Button, CheckButtons
 
 
 
@@ -37,7 +37,7 @@ def next_gen(grid):
 
 
 def main():
-    N = 120
+    N = 100
     global current_grid, fade_grid, img, color, is_dragging, tail_color, is_running, ani, tail_fade_rate, selected_color
     current_grid = _init_grid(N, 0.1).astype(float)
     fade_grid = np.zeros_like(current_grid)
@@ -45,6 +45,7 @@ def main():
     is_dragging = False
     is_running = True
     tail_fade_rate = 0.33  # Default fading rate
+
 
     color = np.array([46, 204, 113]) / 255.0
     bg_color = np.array([34, 47, 62]) / 255.0
@@ -135,7 +136,39 @@ def main():
              'Tail Effect Color',
              va='bottom', ha='center', color='black', fontsize=10)
 
-    # ... [rest of the previous code] ...
+    # Checkbox for toggling the middle lines
+    ax_checkbox = plt.axes([0.03, 0.80, 0.17, 0.05])  # Adjust these values to position your checkbox
+    check = CheckButtons(ax_checkbox, ['Show Grid'], [False])
+
+    # Global variable for the middle lines
+    global h_line, v_line
+    h_line = None
+    v_line = None
+
+    def toggle_middle_lines(label):
+        global current_grid, img, h_line, v_line
+        if label == 'Show Grid':
+            if check.get_status()[0]:  # If checkbox is checked
+                # Calculate middle of the grid
+                mid = N // 2
+                # Create a horizontal and vertical line with a 'glow' effect
+                # Check if the line exists before trying to add it again
+                if not h_line:
+                    h_line = ax.axhline(y=mid, color='cyan', linestyle='--', alpha=0.3, linewidth=0.5)
+                if not v_line:
+                    v_line = ax.axvline(x=mid, color='cyan', linestyle='--', alpha=0.3, linewidth=1)
+            else:  # If checkbox is unchecked
+                # Remove the lines if they exist
+                if h_line:
+                    h_line.remove()
+                    h_line = None
+                if v_line:
+                    v_line.remove()
+                    v_line = None
+            update_plot()
+
+
+    check.on_clicked(toggle_middle_lines)
 
     # Update function for the slider
     def update_fade_rate(val):
@@ -219,8 +252,8 @@ def main():
         fade_grid = update_alpha(current_grid, fade_grid, tail_fade_rate)
         rgba_array = update_rgba(current_grid, fade_grid, color, tail_color)
         img.set_data(rgba_array)
+        # No need to call toggle_middle_lines here
         return img,
-
 
     ax_ratio = plt.axes([0.25, 0.04, 0.65, 0.03], facecolor=axcolor)
     s_ratio = Slider(ax_ratio, 'Seeding Ratio', 0.0, 1.0, valinit=0.1)
