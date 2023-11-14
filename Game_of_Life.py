@@ -32,7 +32,7 @@ def next_gen(grid):
 
 
 def main():
-    N = 250
+    N = 150
     global current_grid, fade_grid, img, color, is_dragging, tail_color, is_running, ani, tail_fade_rate, selected_color, perc_text
     current_grid = _init_grid(N, 0.1).astype(float)
     fade_grid = np.zeros_like(current_grid)
@@ -153,7 +153,8 @@ def main():
                 # Create a horizontal and vertical line with a 'glow' effect
                 # Check if the line exists before trying to add it again
                 if not h_line:
-                    h_line = ax.axhline(y=mid, color='cyan', linestyle='--', alpha=0.3, linewidth=0.5)
+                    h_line = ax.axhline(y=mid, color='cyan', linestyle='--', alpha=0.3, linewidth=1
+                                        )
                 if not v_line:
                     v_line = ax.axvline(x=mid, color='cyan', linestyle='--', alpha=0.3, linewidth=1)
             else:  # If checkbox is unchecked
