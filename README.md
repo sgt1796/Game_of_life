@@ -17,16 +17,12 @@ The initial pattern constitutes the 'seed' of the system. The first generation i
 
 ## Implementation
 
-(Here you can describe your Python implementation, including how you've set up the grid, the logic for applying the rules, and any unique features or functions of your implementation.)
 
 ## Usage
 
-Provide instructions on how to run your implementation of the Game of Life. This might include how to install any dependencies, how to execute the program, and how to set initial conditions.
 
 ## Examples
 
-(Here, you could include examples of initial states and how they evolve over time. You can also include screenshots or links to animations showing the evolution of patterns in the Game of Life.)
 
 ## Conclusion
 
-A brief conclusion about your implementation and any acknowledgments.
