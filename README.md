@@ -17,16 +17,26 @@ The initial pattern constitutes the 'seed' of the system. The first generation i
 
 ## Implementation
 
-(Here you can describe your Python implementation, including how you've set up the grid, the logic for applying the rules, and any unique features or functions of your implementation.)
+The implementation uses Python libraries NumPy for numerical operations and Matplotlib for visualization. The `next_gen` function uses convolution to apply the Game of Life rules efficiently. The program includes features like interactive grid color adjustments, real-time updates, and a fading effect to visualize cell lifespans.
 
 ## Usage
 
-Provide instructions on how to run your implementation of the Game of Life. This might include how to install any dependencies, how to execute the program, and how to set initial conditions.
+### Running the Game
 
-## Examples
+1. **Python Source Code**:
+   - To run the game, execute the `Game_of_Life.py` script using Python:
+     ```sh
+     python Game_of_Life.py
+     ```
+   - Or run it in any Python IDE.
+   - The script initializes a 150x150 grid with a random distribution of live cells and starts the simulation. Use the interactive controls to adjust settings such as fade rate, cell colors, and seeding ratio.
 
-(Here, you could include examples of initial states and how they evolve over time. You can also include screenshots or links to animations showing the evolution of patterns in the Game of Life.)
+2. **Executable Version**:
+   - An executable version of the game is available for users who do not have a Python environment set up. Simply download and run the executable file.
 
+3. **Webpage Version**:
+   - The repository also includes a webpage version (`game_of_life.html`) that provides a comprehensive explanation of the Game of Life, converted from R Markdown files with implementation of Game of Life using R.
+  
 ## Conclusion
 
-A brief conclusion about your implementation and any acknowledgments.
+This implementation of Conway's Game of Life provides a flexible and interactive way to explore cellular automata.    
