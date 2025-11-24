@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game of Life – Web Demo</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./game-of-life.js" defer></script>
+</head>
+<body>
+  <header>
+    <div class="pill">Conway&apos;s Game of Life</div>
+    <h1>Brush-friendly Life playground</h1>
+    <p class="lead">Paint directly on the canvas, randomize seeds, and tune the tick rate. Edges wrap, so ships and oscillators keep cruising.</p>
+    <div class="button-row" style="justify-content:center; margin-top:12px;">
+      <a class="cta secondary" href="./index.html">← Back to demos</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="card">
+      <div class="canvas-frame">
+        <canvas id="life-canvas"></canvas>
+      </div>
+      <div class="meta" id="life-hud">Loading…</div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">Controls</h3>
+      <div class="button-row">
+        <button id="life-run">Pause</button>
+        <button id="life-step">Step once</button>
+        <button id="life-random">Randomize</button>
+        <button id="life-clear">Clear</button>
+      </div>
+
+      <div class="controls" style="margin-top:14px;">
+        <div class="control">
+          <label for="life-speed">Speed (ms/gen)</label>
+          <input type="range" id="life-speed" min="20" max="260" value="90" step="5">
+          <span class="value">90 ms</span>
+        </div>
+        <div class="control">
+          <label for="life-density">Seed density</label>
+          <input type="range" id="life-density" min="0" max="0.6" value="0.18" step="0.01">
+          <span class="value">18%</span>
+        </div>
+        <div class="control">
+          <label for="life-size">Grid resolution</label>
+          <input type="range" id="life-size" min="60" max="220" value="140" step="10">
+          <span class="value">140 x 140</span>
+        </div>
+      </div>
+
+      <div class="meta">
+        <span>Left click/drag to draw • Right click to erase</span>
+        <span>Keyboard: space to pause/resume, R to randomize, C to clear</span>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BZ Visualization – Web Demo</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./bz-visualization.js" defer></script>
+</head>
+<body>
+  <header>
+    <div class="pill">Belousov–Zhabotinsky field</div>
+    <h1>Browser-native reaction diffusion</h1>
+    <p class="lead">Three coupled substrates, toroidal boundary, and multiple color palettes. Adjust the reaction constants or poke the medium to stir new spirals.</p>
+    <div class="button-row" style="justify-content:center; margin-top:12px;">
+      <a class="cta secondary" href="./index.html">← Back to demos</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="card">
+      <div class="canvas-frame">
+        <canvas id="bz-canvas"></canvas>
+      </div>
+      <div class="meta" id="bz-hud">Loading…</div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">Controls</h3>
+      <div class="button-row">
+        <button id="bz-pause">Pause</button>
+        <button id="bz-reseed">Reseed</button>
+      </div>
+
+      <div class="controls" style="margin-top:14px;">
+        <div class="control">
+          <label for="bz-alpha">Alpha (a→b)</label>
+          <input type="range" id="bz-alpha" min="0.2" max="2" value="1.0" step="0.05">
+          <span class="value">1.00</span>
+        </div>
+        <div class="control">
+          <label for="bz-beta">Beta (b→c)</label>
+          <input type="range" id="bz-beta" min="0.2" max="2" value="1.0" step="0.05">
+          <span class="value">1.00</span>
+        </div>
+        <div class="control">
+          <label for="bz-gamma">Gamma (c→a)</label>
+          <input type="range" id="bz-gamma" min="0.2" max="2" value="1.0" step="0.05">
+          <span class="value">1.00</span>
+        </div>
+        <div class="control">
+          <label for="bz-speed">Frame interval</label>
+          <input type="range" id="bz-speed" min="25" max="180" value="70" step="5">
+          <span class="value">70 ms</span>
+        </div>
+        <div class="control">
+          <label for="bz-palette">Palette</label>
+          <select id="bz-palette">
+            <option value="soft">Soft RGB</option>
+            <option value="turbo">Turbo depth</option>
+            <option value="hue">Hue wheel</option>
+            <option value="triad">Triad blend</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="meta">
+        <span>Drag on the canvas to disturb the substrates.</span>
+        <span>Edges wrap — patterns keep circulating.</span>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
