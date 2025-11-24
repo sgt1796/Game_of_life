@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cellular Automata Playgrounds</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header>
+    <div class="pill">GitHub Pages Ready</div>
+    <h1>Cellular Automata Playgrounds</h1>
+    <p class="lead">
+      Two browser-native experiments: Conway&apos;s Game of Life with painter-style controls and a Belousov–Zhabotinsky-inspired reaction-diffusion field.
+      Everything lives in the <code>docs/</code> folder so you can enable GitHub Pages and publish instantly.
+    </p>
+    <div class="button-row" style="justify-content:center; margin-top:16px;">
+      <a class="cta" href="./game-of-life.html">Open Game of Life</a>
+      <a class="cta secondary" href="./bz-visualization.html">Open BZ Visualizer</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="demo-grid">
+      <div class="demo-card">
+        <div class="pill">Interactive canvas</div>
+        <h3>Conway&apos;s Game of Life</h3>
+        <p>Paint cells directly on the canvas, randomize seeds, tune update speed, and step through generations. Wrapped edges keep patterns moving.</p>
+        <div class="chips">
+          <div class="chip">JS + Canvas</div>
+          <div class="chip">Toroidal grid</div>
+          <div class="chip">Brush + drag</div>
+        </div>
+        <div class="button-row" style="margin-top:12px;">
+          <a class="cta" href="./game-of-life.html">Launch</a>
+        </div>
+      </div>
+
+      <div class="demo-card">
+        <div class="pill">Reaction field</div>
+        <h3>Belousov–Zhabotinsky Visualizer</h3>
+        <p>Watch three coupled substrates swirl into spirals and waves. Adjust reaction constants, palette, and frame rate, or poke the medium with your cursor.</p>
+        <div class="chips">
+          <div class="chip">3-channel lattice</div>
+          <div class="chip">Color palettes</div>
+          <div class="chip">Pause + reseed</div>
+        </div>
+        <div class="button-row" style="margin-top:12px;">
+          <a class="cta secondary" href="./bz-visualization.html">Launch</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h3 class="section-title">Publish on GitHub Pages</h3>
+      <p class="lead" style="margin:6px 0 10px; font-size:15px;">
+        Push the repo to GitHub, then in <strong>Settings → Pages</strong> select the <code>main</code> branch with <code>/docs</code> as the source. Your demos will be available at <code>https://&lt;username&gt;.github.io/&lt;repo&gt;/</code>.
+      </p>
+      <div class="meta">
+        <span>Files served: <code>docs/index.html</code>, <code>docs/game-of-life.html</code>, <code>docs/bz-visualization.html</code></span>
+        <span>Shared styling: <code>docs/style.css</code></span>
+      </div>
+    </div>
+  </main>
+
+  <footer>Made for quick sharing — no build step required.</footer>
+</body>
+</html>
