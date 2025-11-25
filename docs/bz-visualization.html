@@ -3,72 +3,209 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BZ Visualization – Web Demo</title>
+  <title>Belousov–Zhabotinsky Reaction Simulator – CA-Based Model</title>
   <link rel="stylesheet" href="./style.css">
   <script src="./bz-visualization.js" defer></script>
 </head>
+
 <body>
-  <header>
-    <div class="pill">Belousov–Zhabotinsky field</div>
-    <h1>Browser-native reaction diffusion</h1>
-    <p class="lead">A digital take on the Belousov–Zhabotinsky oscillator: three reagents chase each other A→B→C on a toroidal grid, with neighbor averaging to mimic diffusion from the simple model in the PDF. Tweak the reaction rates or nudge the canvas to watch spiral waves grow out of the cyclic chemistry.</p>
-    <div class="button-row" style="justify-content:center; margin-top:12px;">
-      <a class="cta secondary" href="./index.html">← Back to demos</a>
+<header>
+  <div class="pill">Belousov–Zhabotinsky Reaction</div>
+  <h1>Interactive Reaction–Diffusion Simulation (Cellular Automaton)</h1>
+
+  <p class="lead">
+    This visualization demonstrates a simplified, three-substrate model of the
+    Belousov–Zhabotinsky (BZ) reaction—an oscillating chemical system known for its
+    spontaneously forming spiral waves and self-organized spatial patterns.
+    The model implemented here follows the reaction scheme described in Turner (2009)
+    and approximates diffusion using a cellular automaton (CA) rule on a 2D grid.
+    Use the controls below to explore how reaction parameters shape the emerging patterns.
+  </p>
+</header>
+
+<main class="page">
+
+  <!-- MAIN SIMULATION CARD -->
+  <div class="card">
+    <div class="dashboard">
+      <div class="canvas-column">
+        <div class="canvas-frame">
+          <canvas id="bz-canvas"></canvas>
+        </div>
+        <div class="meta" id="bz-hud">Loading…</div>
+      </div>
+
+      <div class="side-panel">
+        <div class="panel-header">
+          <div>
+            <div class="pill subtle">Live traces</div>
+            <h3 class="section-title" style="margin:6px 0 2px;">Average substrate levels</h3>
+            <p class="microcopy">
+              Real-time mean concentrations of the three substrates (A, B, C)
+              over the most recent simulation steps.
+            </p>
+          </div>
+        </div>
+
+        <div class="chart-frame">
+          <canvas id="bz-chart"></canvas>
+          <div class="legend">
+            <span class="swatch" style="background:#ff5c5c;"></span> a (red)
+            <span class="swatch" style="background:#4db5ff;"></span> b (blue)
+            <span class="swatch" style="background:#7bd88f;"></span> c (green)
+          </div>
+        </div>
+
+        <!-- OPTIONS -->
+        <div class="option-grid">
+          <div class="option">
+            <div class="option-title">Palette</div>
+            <div class="chip-row" id="bz-palette-row">
+              <button class="chip-btn active" data-palette="relief">Relief (plasma)</button>
+              <button class="chip-btn" data-palette="hue">Hue wheel</button>
+              <button class="chip-btn" data-palette="turbo">Turbo depth</button>
+              <button class="chip-btn" data-palette="soft">Soft RGB</button>
+              <button class="chip-btn" data-palette="triad">Triad blend</button>
+            </div>
+          </div>
+
+          <div class="option">
+            <div class="option-title">Boundary</div>
+            <div class="chip-row" id="bz-boundary-row">
+              <button class="chip-btn active" data-boundary="wrap">Wrap (toroidal)</button>
+              <button class="chip-btn" data-boundary="open">Open (absorbing)</button>
+              <button class="chip-btn" data-boundary="fill">Clamp edges</button>
+            </div>
+          </div>
+
+          <div class="option">
+            <div class="option-title">Domain</div>
+            <div class="chip-row" id="bz-mask-row">
+              <button class="chip-btn active" data-mask="full">Full grid</button>
+              <button class="chip-btn" data-mask="round">Round mask</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
-  </header>
+  </div>
 
-  <main class="page">
-    <div class="card">
-      <div class="canvas-frame">
-        <canvas id="bz-canvas"></canvas>
-      </div>
-      <div class="meta" id="bz-hud">Loading…</div>
+  <!-- CONTROLS CARD -->
+  <div class="card">
+    <h3 class="section-title">Simulation Controls</h3>
+
+    <div class="button-row">
+      <button id="bz-pause">Pause</button>
+      <button id="bz-reseed">Reseed</button>
     </div>
 
-    <div class="card">
-      <h3 class="section-title">Controls</h3>
-      <div class="button-row">
-        <button id="bz-pause">Pause</button>
-        <button id="bz-reseed">Reseed</button>
+    <div class="controls" style="margin-top:14px;">
+      <div class="control">
+        <label for="bz-alpha">Alpha (A ← B)</label>
+        <input type="range" id="bz-alpha" min="0.2" max="1.6" value="1.0" step="0.05">
+        <span class="value">1.00</span>
       </div>
 
-      <div class="controls" style="margin-top:14px;">
-        <div class="control">
-          <label for="bz-alpha">Alpha (a→b)</label>
-          <input type="range" id="bz-alpha" min="0.2" max="2" value="1.0" step="0.05">
-          <span class="value">1.00</span>
-        </div>
-        <div class="control">
-          <label for="bz-beta">Beta (b→c)</label>
-          <input type="range" id="bz-beta" min="0.2" max="2" value="1.0" step="0.05">
-          <span class="value">1.00</span>
-        </div>
-        <div class="control">
-          <label for="bz-gamma">Gamma (c→a)</label>
-          <input type="range" id="bz-gamma" min="0.2" max="2" value="1.0" step="0.05">
-          <span class="value">1.00</span>
-        </div>
-        <div class="control">
-          <label for="bz-speed">Frame interval</label>
-          <input type="range" id="bz-speed" min="25" max="180" value="70" step="5">
-          <span class="value">70 ms</span>
-        </div>
-        <div class="control">
-          <label for="bz-palette">Palette</label>
-          <select id="bz-palette">
-            <option value="soft">Soft RGB</option>
-            <option value="turbo">Turbo depth</option>
-            <option value="hue">Hue wheel</option>
-            <option value="triad">Triad blend</option>
-          </select>
-        </div>
+      <div class="control">
+        <label for="bz-beta">Beta (B ← C)</label>
+        <input type="range" id="bz-beta" min="0.2" max="1.6" value="1.0" step="0.05">
+        <span class="value">1.00</span>
       </div>
 
-      <div class="meta">
-        <span>Drag on the canvas to disturb the substrates.</span>
-        <span>Edges wrap — patterns keep circulating.</span>
+      <div class="control">
+        <label for="bz-gamma">Gamma (C ← A)</label>
+        <input type="range" id="bz-gamma" min="0.2" max="1.6" value="1.0" step="0.05">
+        <span class="value">1.00</span>
+      </div>
+
+      <div class="control">
+        <label for="bz-speed">Frame interval</label>
+        <input type="range" id="bz-speed" min="25" max="160" value="70" step="5">
+        <span class="value">70 ms</span>
       </div>
     </div>
-  </main>
+
+    <div class="meta">
+      <span>Drag or paint on the canvas to locally disturb the reaction.</span>
+      <span id="bz-boundary-note">Edges wrap — patterns keep circulating.</span>
+    </div>
+  </div>
+
+  <!-- EXPLANATION CARD -->
+  <div class="card">
+    <h2 class="section-title">How This Model Works</h2>
+
+    <h3>1. The Belousov–Zhabotinsky Reaction</h3>
+    <p>
+      The BZ reaction is a classic example of a non-equilibrium, oscillating chemical reaction.
+      When carried out on a thin plate, it produces striking spatial structures such as target waves
+      and spirals. The reaction involves periodic oxidation–reduction cycles and can be modeled
+      conceptually using abstract interacting “substrates.”
+      The paper by <a href="https://discovery.ucl.ac.uk/id/eprint/17241/1/17241.pdf" target="_blank">Turner (2009)</a> provides a simplified, pedagogical derivation.
+      
+    </p>
+
+    <h3>2. The Simplified Three-Substrate Model</h3>
+    <p>
+      Following the simplified cyclic scheme from Turner, three substrates
+      <strong>A, B, C</strong> interact through autocatalytic processes:
+    </p>
+
+    <pre style="background:#0b111c; padding:10px; border-radius:6px;">
+A + B → 2A
+B + C → 2B
+C + A → 2C
+    </pre>
+
+    <p>
+      These reactions lead to update equations (pages 4–5 of the PDF) that evolve each substrate:
+    </p>
+
+    <pre style="background:#0b111c; padding:10px; border-radius:6px;">
+aₜ₊₁ = aₜ + aₜ (α bₜ − γ cₜ)
+bₜ₊₁ = bₜ + bₜ (β cₜ − α aₜ)
+cₜ₊₁ = cₜ + cₜ (γ aₜ − β bₜ)
+    </pre>
+
+    <p>
+      These create oscillations because each substrate promotes the next while being consumed
+      by another, forming a closed loop. Adding parameters α, β, γ lets you tune the speed and
+      relative dominance of each step in the cycle.
+    </p>
+
+    <h3>3. Why Use a Cellular Automaton?</h3>
+    <p>
+      True reaction–diffusion models use continuous differential equations.
+      This demo uses a discrete CA approximation that:
+    </p>
+
+    <ul>
+      <li>Averages each cell with its 8 neighbors (a 3×3 stencil)</li>
+      <li>Applies the reaction equations to the averaged values</li>
+      <li>Repeats this process each frame</li>
+    </ul>
+
+    <p>
+      This simple diffusion-by-averaging approach reproduces the qualitative behavior:
+      rotating spiral waves, target rings, filament growth, and sensitivity to disturbances.
+    </p>
+
+    <h3>4. How the Parameters Shape the Patterns</h3>
+    <ul>
+      <li><strong>α (A ← B)</strong>: Increasing α accelerates production of A, lengthening and smoothing wavefronts.</li>
+      <li><strong>β (B ← C)</strong>: Adjusts the "middle" stage of the cycle, altering spiral curvature and stability.</li>
+      <li><strong>γ (C ← A)</strong>: Influences how fast C grows at the back of the wave.</li>
+    </ul>
+
+    <p>
+      In Turner’s experiments (figure on page 7 of the PDF),
+      setting α > 1 produces slower-forming spirals with elongated fronts. You can explore
+      similar dynamics directly with the sliders in this demo.
+    </p>
+
+  </div>
+
+</main>
 </body>
 </html>

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.widgets as widgets
 import matplotlib.animation as animation
 from matplotlib.patches import Rectangle
-from matplotlib.widgets import Slider, Button, CheckButtons
+from matplotlib.widgets import Slider, Button, CheckButtons, RadioButtons
 from scipy.signal import convolve2d
 
 
@@ -19,12 +19,14 @@ def _init_grid(n, ratio):
     return vector.reshape((n, n))
 
 # Updated next_gen function -- using kernel convolution to make it faster
-def next_gen(grid):
+def next_gen(grid, boundary_mode):
+    # Map UI boundary modes to scipy's boundary argument. "open" behaves like fill/absorbing.
+    conv_boundary = "wrap" if boundary_mode == "wrap" else "fill"
     # Use convolution to apply the Game of Life rules
     kernel = np.array([[1, 1, 1],
                        [1, 0, 1],
                        [1, 1, 1]])
-    neighbor_count = convolve2d(grid, kernel, mode="same")
+    neighbor_count = convolve2d(grid, kernel, mode="same", boundary=conv_boundary, fillvalue=0.0)
     birth = (neighbor_count == 3) & (grid == 0)
     survival = ((neighbor_count == 2) | (neighbor_count == 3)) & (grid == 1)
     grid_next = np.where(birth | survival, 1, 0)
@@ -33,13 +35,14 @@ def next_gen(grid):
 
 def main():
     N = 150
-    global current_grid, fade_grid, img, color, is_dragging, tail_color, is_running, ani, tail_fade_rate, selected_color, perc_text
+    global current_grid, fade_grid, img, color, is_dragging, tail_color, is_running, ani, tail_fade_rate, selected_color, perc_text, boundary_mode
     current_grid = _init_grid(N, 0.1).astype(float)
     fade_grid = np.zeros_like(current_grid)
 
     is_dragging = False
     is_running = True
     tail_fade_rate = 0.33  # Default fading rate
+    boundary_mode = "wrap"
 
 
     color = np.array([46, 204, 113]) / 255.0
@@ -139,6 +142,17 @@ def main():
     ax_checkbox = plt.axes([0.03, 0.80, 0.17, 0.05])  # Adjust these values to position your checkbox
     check = CheckButtons(ax_checkbox, ['Show Grid'], [False])
 
+    boundary_options = [
+        ('Wrap (toroidal)', 'wrap'),
+        ('Open (absorbing)', 'open'),
+        ('Fill edges (zeros)', 'fill'),
+    ]
+    boundary_label_to_mode = dict(boundary_options)
+    ax_boundary = plt.axes([0.03, 0.68, 0.17, 0.10], facecolor=axcolor)
+    boundary_radio = RadioButtons(ax_boundary, [name for name, _ in boundary_options], active=0)
+    for lbl in boundary_radio.labels:
+        lbl.set_fontsize(9)
+
     # Global variable for the middle lines
     global h_line, v_line
     h_line = None
@@ -169,6 +183,12 @@ def main():
 
 
     check.on_clicked(toggle_middle_lines)
+
+    def set_boundary_mode(label):
+        global boundary_mode
+        boundary_mode = boundary_label_to_mode[label]
+
+    boundary_radio.on_clicked(set_boundary_mode)
 
     # Update function for the slider
     def update_fade_rate(val):
@@ -245,10 +265,10 @@ def main():
 
     # Use this function in your animation update step
     def update(*args):
-        global current_grid, fade_grid, img, color, is_running, perc_text
+        global current_grid, fade_grid, img, color, is_running, perc_text, boundary_mode
         if not is_running:
             return img,
-        current_grid = next_gen(current_grid)
+        current_grid = next_gen(current_grid, boundary_mode)
         fade_grid = update_alpha(current_grid, fade_grid, tail_fade_rate)
         rgba_array = update_rgba(current_grid, fade_grid, color, tail_color)
         img.set_data(rgba_array)

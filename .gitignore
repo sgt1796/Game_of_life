@@ -1,2 +1,12 @@
 dist/
 *.exe
+__pycache__/
+*.pyc
+.vscode/
+.env
+.idea/
+*.iml
+node_modules/
+.DS_Store
+coverage/
+logs/
