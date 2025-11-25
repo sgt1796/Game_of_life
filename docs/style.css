@@ -382,3 +382,20 @@ footer {
   text-align: center;
   font-size: 13px;
 }
+
+/* --- Mobile Fix for Dashboard Collapse --- */
+@media (max-width: 680px) {
+  .dashboard {
+    display: block;
+  }
+
+  .canvas-frame canvas {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 200px;
+  }
+
+  .side-panel {
+    margin-top: 20px;
+  }
+}
