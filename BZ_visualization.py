@@ -10,7 +10,7 @@ from matplotlib import animation, colors
 from matplotlib.widgets import Slider, Button, RadioButtons
 from scipy.signal import convolve2d
 
-# 3x3 kernel to average a cell with its eight neighbors (toroidal wrap via boundary="wrap").
+# 3x3 kernel to average a cell with its eight neighbors.
 NEIGHBOR_KERNEL = np.ones((3, 3), dtype=float)
 
 
@@ -22,14 +22,43 @@ def random_substrates(size: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return a, b, c
 
 
-def step(a: np.ndarray, b: np.ndarray, c: np.ndarray, alpha: float, beta: float, gamma: float):
-    avg_a = convolve2d(a, NEIGHBOR_KERNEL, mode="same", boundary="wrap") / 9.0
-    avg_b = convolve2d(b, NEIGHBOR_KERNEL, mode="same", boundary="wrap") / 9.0
-    avg_c = convolve2d(c, NEIGHBOR_KERNEL, mode="same", boundary="wrap") / 9.0
+def step(
+    a: np.ndarray,
+    b: np.ndarray,
+    c: np.ndarray,
+    alpha: float,
+    beta: float,
+    gamma: float,
+    boundary_mode: str,
+    domain_mask: np.ndarray | None,
+):
+    def avg(field: np.ndarray) -> np.ndarray:
+        boundary = "wrap" if boundary_mode == "wrap" else "fill"
+        masked_field = field if domain_mask is None else field * domain_mask
+
+        summed = convolve2d(masked_field, NEIGHBOR_KERNEL, mode="same", boundary=boundary, fillvalue=0.0)
+
+        # Open and masked modes normalize by the number of valid neighbors to avoid edge dilution.
+        needs_count_norm = boundary_mode == "open" or domain_mask is not None
+        if needs_count_norm:
+            mask_for_counts = np.ones_like(field) if domain_mask is None else domain_mask
+            counts = convolve2d(mask_for_counts, NEIGHBOR_KERNEL, mode="same", boundary=boundary, fillvalue=0.0)
+            counts = np.clip(counts, 1.0, None)
+            return summed / counts
+
+        return summed / 9.0
+
+    avg_a = avg(a)
+    avg_b = avg(b)
+    avg_c = avg(c)
 
     a_next = np.clip(avg_a + avg_a * (alpha * avg_b - gamma * avg_c), 0.0, 1.0)
     b_next = np.clip(avg_b + avg_b * (beta * avg_c - alpha * avg_a), 0.0, 1.0)
     c_next = np.clip(avg_c + avg_c * (gamma * avg_a - beta * avg_b), 0.0, 1.0)
+    if domain_mask is not None:
+        a_next *= domain_mask
+        b_next *= domain_mask
+        c_next *= domain_mask
     return a_next, b_next, c_next
 
 
@@ -51,6 +80,12 @@ def main():
     disturb_radius = 8
     disturb_strength = 0.55
     mouse_down = False
+    boundary_mode = "wrap"
+    mask_mode = "full"
+    yy, xx = np.ogrid[:size, :size]
+    center = (size - 1) / 2.0
+    round_radius = size * 0.48
+    round_mask = ((xx - center) ** 2 + (yy - center) ** 2) <= round_radius ** 2
 
     # Color mappers for selectable looks.
     cmap_plasma = cm.get_cmap("plasma")
@@ -99,6 +134,15 @@ def main():
     ]
     name_to_index = {name: idx for idx, (name, _) in enumerate(color_options)}
     active_color_index = 0
+    boundary_options = [
+        ("Wrap (toroidal)", "wrap"),
+        ("Open (absorbing)", "open"),
+        ("Clamp edges (fill)", "fill"),
+    ]
+    boundary_name_to_index = {name: idx for idx, (name, _) in enumerate(boundary_options)}
+    boundary_mode_to_index = {mode: idx for idx, (_, mode) in enumerate(boundary_options)}
+    mask_options = [("Full grid", "full"), ("Round mask", "round")]
+    mask_name_to_index = {name: idx for idx, (name, _) in enumerate(mask_options)}
 
     def current_to_rgb():
         return color_options[active_color_index][1](a, b, c)
@@ -108,13 +152,13 @@ def main():
     b_levels: deque[float] = deque(maxlen=history_length)
     c_levels: deque[float] = deque(maxlen=history_length)
 
-    fig, (ax_pattern, ax_levels) = plt.subplots(
+    fig, (ax_pattern, ax_levels, ax_options) = plt.subplots(
         1,
-        2,
-        figsize=(12, 6.5),
-        gridspec_kw={"width_ratios": [1.25, 1]},
+        3,
+        figsize=(14.5, 6.5),
+        gridspec_kw={"width_ratios": [1.2, 1, 0.55]},
     )
-    fig.subplots_adjust(bottom=0.2, top=0.9, wspace=0.32)
+    fig.subplots_adjust(bottom=0.2, top=0.9, wspace=0.25)
     fig.patch.set_facecolor("#101820")
 
     fig.suptitle(
@@ -145,8 +189,10 @@ def main():
     for text in legend.get_texts():
         text.set_color("#d2e7ff")
 
-    # Palette selector parked in the upper-right to avoid the sliders.
-    ax_palette = plt.axes([0.83, 0.68, 0.15, 0.22], facecolor="#0f1b26")
+    ax_options.axis("off")
+    ax_options.set_facecolor("#0f1b26")
+    # Palette selector sits inside the dedicated options panel.
+    ax_palette = ax_options.inset_axes([0.08, 0.55, 0.84, 0.35], facecolor="#0f1b26")
     palette_selector = RadioButtons(
         ax_palette,
         [name for name, _ in color_options],
@@ -163,6 +209,62 @@ def main():
         fig.canvas.draw_idle()
 
     palette_selector.on_clicked(on_palette)
+
+    # Boundary selector to choose wrap, open/absorbing, or zero-fill edges.
+    ax_boundary = ax_options.inset_axes([0.08, 0.30, 0.84, 0.20], facecolor="#0f1b26")
+    boundary_selector = RadioButtons(
+        ax_boundary,
+        [name for name, _ in boundary_options],
+        active=boundary_name_to_index["Wrap (toroidal)"],
+    )
+    def update_boundary_labels(disable_wrap: bool):
+        for lbl, (_, mode) in zip(boundary_selector.labels, boundary_options):
+            color = "#627386" if disable_wrap and mode == "wrap" else "#d2e7ff"
+            lbl.set_color(color)
+            lbl.set_fontsize(9)
+
+    update_boundary_labels(disable_wrap=False)
+
+    def on_boundary(label: str):
+        nonlocal boundary_mode
+        mode = dict(boundary_options)[label]
+        if mask_mode == "round" and mode == "wrap":
+            # Prevent selecting wrap when round mask is active.
+            boundary_selector.set_active(boundary_mode_to_index[boundary_mode])
+            return
+        boundary_mode = mode
+        img.set_data(current_to_rgb())
+        fig.canvas.draw_idle()
+
+    boundary_selector.on_clicked(on_boundary)
+
+    # Mask selector to toggle between full grid and round mask domain.
+    ax_mask = ax_options.inset_axes([0.08, 0.07, 0.84, 0.18], facecolor="#0f1b26")
+    mask_selector = RadioButtons(
+        ax_mask,
+        [name for name, _ in mask_options],
+        active=mask_name_to_index["Full grid"],
+    )
+    for lbl in mask_selector.labels:
+        lbl.set_color("#d2e7ff")
+        lbl.set_fontsize(9)
+
+    def on_mask(label: str):
+        nonlocal mask_mode, a, b, c, boundary_mode
+        mask_mode = dict(mask_options)[label]
+        current_mask = round_mask if mask_mode == "round" else None
+        if mask_mode == "round" and boundary_mode == "wrap":
+            boundary_mode = "open"
+            boundary_selector.set_active(boundary_name_to_index["Open (absorbing)"])
+        update_boundary_labels(disable_wrap=mask_mode == "round")
+        if current_mask is not None:
+            a *= current_mask
+            b *= current_mask
+            c *= current_mask
+        img.set_data(current_to_rgb())
+        fig.canvas.draw_idle()
+
+    mask_selector.on_clicked(on_mask)
 
     def record_levels():
         nonlocal step_index
@@ -215,6 +317,10 @@ def main():
     def on_reset(event):
         nonlocal a, b, c, step_index
         a, b, c = random_substrates(size)
+        if mask_mode == "round":
+            a *= round_mask
+            b *= round_mask
+            c *= round_mask
         step_index = 0
         time_values.clear()
         a_levels.clear()
@@ -230,15 +336,33 @@ def main():
         nonlocal a, b, c
         if event.inaxes != ax_pattern or event.xdata is None or event.ydata is None:
             return
-        cx = int(round(event.ydata)) % size
-        cy = int(round(event.xdata)) % size
+        cx = int(round(event.ydata))
+        cy = int(round(event.xdata))
         rel = np.arange(-disturb_radius, disturb_radius + 1)
         mask = (rel[:, None] ** 2 + rel[None, :] ** 2) <= disturb_radius ** 2
         noise = rng.uniform(-disturb_strength, disturb_strength, size=mask.shape) * mask
-        idx = np.ix_((cx + rel) % size, (cy + rel) % size)
-        a[idx] = np.clip(a[idx] + 0.65 * noise, 0.0, 1.0)
-        b[idx] = np.clip(b[idx] + 0.65 * noise, 0.0, 1.0)
-        c[idx] = np.clip(c[idx] + 0.65 * noise, 0.0, 1.0)
+        if boundary_mode == "wrap":
+            idx = np.ix_((cx + rel) % size, (cy + rel) % size)
+            a[idx] = np.clip(a[idx] + 0.65 * noise, 0.0, 1.0)
+            b[idx] = np.clip(b[idx] + 0.65 * noise, 0.0, 1.0)
+            c[idx] = np.clip(c[idx] + 0.65 * noise, 0.0, 1.0)
+        else:
+            xs = cx + rel
+            ys = cy + rel
+            valid_x = (xs >= 0) & (xs < size)
+            valid_y = (ys >= 0) & (ys < size)
+            if not valid_x.any() or not valid_y.any():
+                return
+            idx = np.ix_(xs[valid_x], ys[valid_y])
+            trimmed_noise = noise[np.ix_(valid_x, valid_y)]
+            if mask_mode == "round":
+                mask_region = round_mask[idx]
+                trimmed_noise = trimmed_noise * mask_region
+                if not mask_region.any():
+                    return
+            a[idx] = np.clip(a[idx] + 0.65 * trimmed_noise, 0.0, 1.0)
+            b[idx] = np.clip(b[idx] + 0.65 * trimmed_noise, 0.0, 1.0)
+            c[idx] = np.clip(c[idx] + 0.65 * trimmed_noise, 0.0, 1.0)
         img.set_data(current_to_rgb())
         fig.canvas.draw_idle()
 
@@ -259,7 +383,8 @@ def main():
         nonlocal a, b, c
         if not running:
             return img, line_a, line_b, line_c
-        a, b, c = step(a, b, c, s_alpha.val, s_beta.val, s_gamma.val)
+        domain_mask = round_mask if mask_mode == "round" else None
+        a, b, c = step(a, b, c, s_alpha.val, s_beta.val, s_gamma.val, boundary_mode, domain_mask)
         img.set_data(current_to_rgb())
         record_levels()
         update_traces()
