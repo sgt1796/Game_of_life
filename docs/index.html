@@ -10,12 +10,13 @@
   <header>
     <h1>Cellular Automata Playgrounds</h1>
     <p class="lead">
-      Two browser-native experiments: Conway&apos;s Game of Life with painter-style controls and a Belousov–Zhabotinsky-inspired reaction-diffusion field.
+      Two browser-native experiments: Conway&apos;s Game of Life with painter-style controls and a Belousov-Zhabotinsky-inspired reaction-diffusion field.
       Everything lives in the <code>docs/</code> folder so you can enable GitHub Pages and publish instantly.
     </p>
     <div class="button-row" style="justify-content:center; margin-top:16px;">
       <a class="cta" href="./game-of-life.html">Open Game of Life</a>
       <a class="cta secondary" href="./bz-visualization.html">Open BZ Visualizer</a>
+      <a class="cta secondary" href="./wolfram-bz.html">Open Wolfram CA</a>
     </div>
   </header>
 
@@ -37,7 +38,7 @@
 
       <div class="demo-card">
         <div class="pill">Reaction field</div>
-        <h3>Belousov–Zhabotinsky Visualizer</h3>
+        <h3>Belousov-Zhabotinsky Visualizer</h3>
         <p>Watch three coupled substrates swirl into spirals and waves. Adjust reaction constants, palette, and frame rate, or poke the medium with your cursor.</p>
         <div class="chips">
           <div class="chip">3-channel lattice</div>
@@ -46,6 +47,20 @@
         </div>
         <div class="button-row" style="margin-top:12px;">
           <a class="cta secondary" href="./bz-visualization.html">Launch</a>
+        </div>
+      </div>
+
+      <div class="demo-card">
+        <div class="pill">Totalistic CA</div>
+        <h3>Wolfram Rule 1350851716507335422</h3>
+        <p>Explore a 20-state, range-1 totalistic rule that produces BZ-like spiral and target waves. Swap palettes, change boundaries, or paste in nearby rules to experiment.</p>
+        <div class="chips">
+          <div class="chip">20 colors</div>
+          <div class="chip">Moore neighborhood</div>
+          <div class="chip">Rule decoder</div>
+        </div>
+        <div class="button-row" style="margin-top:12px;">
+          <a class="cta secondary" href="./wolfram-bz.html">Launch</a>
         </div>
       </div>
     </div>
@@ -61,6 +76,6 @@
     </div>
   </main>
 
-  <footer>Made for quick sharing — no build step required.</footer>
+  <footer>Made for quick sharing - no build step required.</footer>
 </body>
 </html>

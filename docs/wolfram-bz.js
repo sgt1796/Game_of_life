@@ -90,8 +90,13 @@
     cells: new Uint8Array(),
     cellsNext: new Uint8Array(),
     domainMask: new Float32Array(),
+    imageBuffer: null,
     ruleNumber: "1350851716507335422",
     ruleTable: new Uint8Array(MAX_SUM + 1),
+    ruleMaxValue: STATE_COUNT - 1,
+    ruleActiveRate: 0.12,
+    colorScaleMax: STATE_COUNT - 1,
+    levelCounts: new Uint32Array(STATE_COUNT),
     boundary: "wrap",
     maskMode: "full",
     running: true,
@@ -138,11 +143,33 @@
     return table;
   }
 
+  function computeRuleStats(table) {
+    let max = 0;
+    let nonZero = 0;
+    for (let i = 0; i < table.length; i += 1) {
+      const v = table[i];
+      if (v > max) max = v;
+      if (v > 0) nonZero += 1;
+    }
+    return { max, activeRate: table.length ? nonZero / table.length : 0 };
+  }
+
+  function updateColorScale(maxLevelSeen) {
+    // Tie the palette range to the highest value that is actually present so the colors stay calm.
+    const fallbackMax = state.ruleMaxValue || STATE_COUNT - 1;
+    const nextMax = Math.max(1, maxLevelSeen || fallbackMax);
+    if (nextMax !== state.colorScaleMax) {
+      state.colorScaleMax = nextMax;
+      scheduleDraw();
+    }
+  }
+
   function allocate() {
     const cells = state.size * state.size;
     state.cells = new Uint8Array(cells);
     state.cellsNext = new Uint8Array(cells);
     state.domainMask = new Float32Array(cells);
+    state.imageBuffer = ctx.createImageData(state.size, state.size);
     canvas.width = state.size;
     canvas.height = state.size;
     buildRoundMask();
@@ -164,14 +191,21 @@
   }
 
   function reseed() {
+    const maxValue = Math.max(1, state.ruleMaxValue || STATE_COUNT - 1);
+    const activeRate = clamp01(Math.max(0.03, state.ruleActiveRate || 0));
+    let seedMax = 0;
     for (let i = 0; i < state.cells.length; i += 1) {
-      const value = Math.floor(Math.random() * STATE_COUNT);
+      const isActive = Math.random() < activeRate;
+      const value = isActive ? Math.floor(Math.pow(Math.random(), 1.6) * (maxValue + 1)) : 0;
+      seedMax = value > seedMax ? value : seedMax;
       state.cells[i] = value;
       state.cellsNext[i] = 0;
       if (state.maskMode === "round" && state.domainMask[i] === 0) {
         state.cells[i] = 0;
       }
     }
+    const cappedSeedMax = Math.max(1, Math.min(seedMax || 1, Math.ceil(maxValue * 0.7)));
+    updateColorScale(cappedSeedMax);
     state.tick = 0;
     history.steps = [];
     history.mean = [];
@@ -193,14 +227,20 @@
   function recordHistory() {
     let sum = 0;
     let active = 0;
-    const counts = new Array(STATE_COUNT).fill(0);
+    let activeMax = 0;
+    const counts = state.levelCounts;
+    counts.fill(0);
     const total = state.cells.length;
     for (let i = 0; i < total; i += 1) {
       const v = state.cells[i];
       sum += v;
-      if (v > 0) active += 1;
+      if (v > 0) {
+        active += 1;
+        if (v > activeMax) activeMax = v;
+      }
       counts[v] += 1;
     }
+    updateColorScale(activeMax);
     let entropy = 0;
     for (let i = 0; i < STATE_COUNT; i += 1) {
       if (!counts[i]) continue;
@@ -281,7 +321,7 @@
   }
 
   function paletteValue(level, x, y, idx) {
-    const t = clamp01(level / (STATE_COUNT - 1));
+    const t = clamp01(level / (state.colorScaleMax || 1));
     switch (state.palette) {
       case "cyclic": {
         const k = Math.floor(t * (bzCyclicStops.length - 1));
@@ -302,8 +342,10 @@
 
   function drawField() {
     const { size, cells } = state;
-    const image = ctx.createImageData(size, size);
-    const data = image.data;
+    if (!state.imageBuffer || state.imageBuffer.width !== size || state.imageBuffer.height !== size) {
+      state.imageBuffer = ctx.createImageData(size, size);
+    }
+    const data = state.imageBuffer.data;
     let p = 0;
     for (let y = 0; y < size; y += 1) {
       const row = y * size;
@@ -316,7 +358,7 @@
         data[p + 3] = 255;
       }
     }
-    ctx.putImageData(image, 0, 0);
+    ctx.putImageData(state.imageBuffer, 0, 0);
   }
 
   function drawChart() {
@@ -504,6 +546,10 @@
     }
     state.ruleTable = table;
     state.ruleNumber = rule;
+    const { max, activeRate } = computeRuleStats(table);
+    state.ruleMaxValue = max;
+    state.ruleActiveRate = clamp01(Math.max(activeRate, 0.02));
+    updateColorScale(0);
     status.textContent = "Rule applied (base-20 encoded).";
     renderRuleTable(table);
   }
@@ -563,6 +609,10 @@
     const defaultTable = decodeRule(state.ruleNumber);
     if (defaultTable) {
       state.ruleTable = defaultTable;
+      const { max, activeRate } = computeRuleStats(defaultTable);
+      state.ruleMaxValue = max;
+      state.ruleActiveRate = clamp01(Math.max(activeRate, 0.02));
+      updateColorScale(0);
       renderRuleTable(defaultTable);
     }
     setPalette(state.palette);
