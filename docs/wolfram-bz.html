@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wolfram Totalistic CA - Rule 1350851716507335422</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./wolfram-bz.js" defer></script>
+</head>
+
+<body>
+<header>
+  <div class="pill">2D Totalistic CA</div>
+  <h1>Wolfram Rule 1350851716507335422 (20-State, Range 1)</h1>
+
+  <p class="lead">
+    This page reuses the BZ reaction layout to showcase a Wolfram-style, two-dimensional totalistic
+    cellular automaton. The showcased rule number, <strong>1350851716507335422</strong>, is a
+    range-1 Moore neighborhood CA with 20 possible states (0-19). It produces the same kind of
+    concentric and spiral waves associated with the Belousov-Zhabotinsky reaction.
+  </p>
+</header>
+
+<main class="page">
+
+  <!-- MAIN SIMULATION CARD -->
+  <div class="card">
+    <div class="dashboard">
+      <div class="canvas-column">
+        <div class="canvas-frame">
+          <canvas id="wolfram-canvas"></canvas>
+        </div>
+        <div class="meta" id="wolfram-hud">Loading...</div>
+      </div>
+
+      <div class="side-panel">
+        <div class="panel-header">
+          <div>
+            <div class="pill subtle">Live traces</div>
+            <h3 class="section-title" style="margin:6px 0 2px;">Field statistics</h3>
+            <p class="microcopy">
+              Mean state, active coverage, and state diversity captured over the latest steps
+              (all values normalized to 0-1 for charting).
+            </p>
+          </div>
+        </div>
+
+        <div class="chart-frame">
+          <canvas id="wolfram-chart"></canvas>
+          <div class="legend">
+            <span class="swatch" style="background:#ffd166;"></span> mean state (/19)
+            <span class="swatch" style="background:#4ae1ff;"></span> active (>0) fraction
+            <span class="swatch" style="background:#c792ff;"></span> entropy / log(20)
+          </div>
+        </div>
+
+        <!-- OPTIONS -->
+        <div class="option-grid">
+          <div class="option">
+            <div class="option-title">Palette</div>
+            <div class="chip-row" id="wolfram-palette-row">
+              <button class="chip-btn active" data-palette="ember">Ember</button>
+              <button class="chip-btn" data-palette="marine">Marine</button>
+              <button class="chip-btn" data-palette="ice">Icefire</button>
+              <button class="chip-btn" data-palette="spectrum">Spectrum</button>
+              <button class="chip-btn" data-palette="cyclic">Cyclic</button>
+            </div>
+          </div>
+
+          <div class="option">
+            <div class="option-title">Boundary</div>
+            <div class="chip-row" id="wolfram-boundary-row">
+              <button class="chip-btn active" data-boundary="wrap">Wrap (toroidal)</button>
+              <button class="chip-btn" data-boundary="open">Open (absorbing)</button>
+              <button class="chip-btn" data-boundary="fill">Clamp edges</button>
+            </div>
+          </div>
+
+          <div class="option">
+            <div class="option-title">Domain</div>
+            <div class="chip-row" id="wolfram-mask-row">
+              <button class="chip-btn active" data-mask="full">Full grid</button>
+              <button class="chip-btn" data-mask="round">Round mask</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROLS CARD -->
+  <div class="card">
+    <h3 class="section-title">Simulation Controls</h3>
+
+    <div class="button-row">
+      <button id="wolfram-pause">Pause</button>
+      <button id="wolfram-reseed">Reseed</button>
+    </div>
+
+    <div class="controls" style="margin-top:14px;">
+      <div class="control">
+        <label for="wolfram-rule">Rule number (base-20 totalistic)</label>
+        <input type="text" id="wolfram-rule" value="1350851716507335422" inputmode="numeric">
+        <span class="value">172-digit lookup, states 0-19</span>
+      </div>
+
+      <div class="control">
+        <label for="wolfram-speed">Frame interval</label>
+        <input type="range" id="wolfram-speed" min="25" max="160" value="70" step="5">
+        <span class="value">70 ms</span>
+      </div>
+    </div>
+
+    <div class="meta">
+      <span>Drag or paint on the canvas to nudge the lattice.</span>
+      <span id="wolfram-boundary-note">Edges wrap - patterns keep circulating.</span>
+    </div>
+  </div>
+
+  <!-- EXPLANATION CARD -->
+  <div class="card">
+    <h2 class="section-title">What Rule 1350851716507335422 Encodes</h2>
+
+    <h3>1. Totalistic, range-1, 20-color CA</h3>
+    <p>
+      Each cell stores an integer state from <code>0</code> to <code>19</code>. Its Moore neighborhood
+      (the cell plus its 8 neighbors) is summed, yielding a value in the range 0-171. The next state
+      is chosen from a lookup table indexed by that sum.
+    </p>
+
+    <h3>2. Decoding the rule number</h3>
+    <p>
+      The rule number is a base-20 encoding of the 172-entry lookup table:
+    </p>
+    <pre style="background:#0b111c; padding:10px; border-radius:6px;">
+if sum == 0  -> next = digit_0
+if sum == 1  -> next = digit_1
+...
+if sum == 171 -> next = digit_171
+    </pre>
+    <p>
+      Converting <strong>1350851716507335422</strong> from base-20 produces the exact transition
+      table used here. Nearby numbers in this rule space often generate similar concentric or spiral
+      waves, so you can paste another integer into the control above to explore.
+    </p>
+
+    <h3>3. Why it looks BZ-like</h3>
+    <p>
+      Summing neighbors mimics diffusion, while the lookup table encodes local reaction kinetics.
+      With 20 discrete levels, the automaton can support propagating wavefronts and spiral cores
+      reminiscent of the Belousov-Zhabotinsky reaction, without solving any differential equations.
+    </p>
+
+  </div>
+
+  <div class="card">
+    <h3 class="section-title">Decoded lookup table (sum -> next state)</h3>
+    <p class="microcopy" style="margin-top:4px;">
+      The 172-entry base-20 table decoded from the current rule number. Lines wrap for readability;
+      each entry lists the neighborhood sum (0-171) and the resulting next state (0-19).
+    </p>
+    <pre style="background:#0b111c; padding:10px; border-radius:6px; max-height:260px; overflow:auto;" id="wolfram-rule-table">Decoding...</pre>
+  </div>
+
+</main>
+</body>
+</html>
