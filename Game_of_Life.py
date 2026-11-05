@@ -16,8 +16,9 @@ def _init_grid(n, ratio):
 def next_gen(grid, boundary_mode, method="auto"):
     """Advance binary Life; select byte sums or packed bits by grid size.
 
-    Explicit methods are "dense", "packed", and "lookup". All preserve the
+    Explicit methods are "dense", "packed", "lookup", and "quicklife". All preserve the
     float64 matrix interface and wrap/open/fill boundary behavior.
+    Use QuickLifeEngine directly to preserve its packed state across steps.
     """
     return next_generation(grid, boundary_mode, method)
 
@@ -38,6 +39,10 @@ def main(life_engine="auto"):
     is_running = True
     tail_fade_rate = 0.33  # Default fading rate
     boundary_mode = "wrap"
+    quicklife = None
+    if life_engine == "quicklife":
+        from life_engines import QuickLifeEngine
+        quicklife = QuickLifeEngine(current_grid, boundary_mode)
 
 
     color = np.array([46, 204, 113]) / 255.0
@@ -182,6 +187,8 @@ def main(life_engine="auto"):
     def set_boundary_mode(label):
         global boundary_mode
         boundary_mode = boundary_label_to_mode[label]
+        if quicklife is not None:
+            quicklife.set_boundary(boundary_mode)
 
     boundary_radio.on_clicked(set_boundary_mode)
 
@@ -249,6 +256,8 @@ def main(life_engine="auto"):
         if i >= 0 and i < N and j >= 0 and j < N:
             current_grid[j, i] = 1
             fade_grid[j, i] = 1
+            if quicklife is not None:
+                quicklife.set_cell(i, j)
             update_plot()
 
     # Function to update the plot
@@ -263,7 +272,11 @@ def main(life_engine="auto"):
         global current_grid, fade_grid, img, color, is_running, perc_text, boundary_mode
         if not is_running:
             return img,
-        current_grid = next_gen(current_grid, boundary_mode, method=life_engine)
+        if quicklife is None:
+            current_grid = next_gen(current_grid, boundary_mode, method=life_engine)
+        else:
+            quicklife.step()
+            current_grid = quicklife.to_numpy()
         fade_grid = update_alpha(current_grid, fade_grid, tail_fade_rate)
         rgba_array = update_rgba(current_grid, fade_grid, color, tail_color)
         img.set_data(rgba_array)
@@ -293,6 +306,8 @@ def main(life_engine="auto"):
         global current_grid, fade_grid
         current_grid = _init_grid(N, s_ratio.val).astype(float)
         fade_grid = np.zeros_like(current_grid)
+        if quicklife is not None:
+            quicklife.load(current_grid)
         update_plot()
 
     s_ratio.on_changed(update_seeding_ratio)
@@ -302,6 +317,8 @@ def main(life_engine="auto"):
         global current_grid, fade_grid
         current_grid = _init_grid(N, s_ratio.val).astype(float)
         fade_grid = np.zeros_like(current_grid)
+        if quicklife is not None:
+            quicklife.load(current_grid)
         update_plot()
 
     b_reset.on_clicked(reset)
@@ -311,6 +328,8 @@ def main(life_engine="auto"):
         global current_grid, fade_grid
         current_grid = np.zeros((N, N), dtype=float)
         fade_grid = np.zeros_like(current_grid)
+        if quicklife is not None:
+            quicklife.load(current_grid)
         update_plot()
 
     b_clear.on_clicked(clear_grid)
