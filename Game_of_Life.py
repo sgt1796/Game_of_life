@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.widgets as widgets
-import matplotlib.animation as animation
-from matplotlib.patches import Rectangle
-from matplotlib.widgets import Slider, Button, CheckButtons, RadioButtons
-from scipy.signal import convolve2d
+from life_engines import next_generation
 
 
 
@@ -18,22 +13,22 @@ def _init_grid(n, ratio):
     np.random.shuffle(vector)
     return vector.reshape((n, n))
 
-# Updated next_gen function -- using kernel convolution to make it faster
-def next_gen(grid, boundary_mode):
-    # Map UI boundary modes to scipy's boundary argument. "open" behaves like fill/absorbing.
-    conv_boundary = "wrap" if boundary_mode == "wrap" else "fill"
-    # Use convolution to apply the Game of Life rules
-    kernel = np.array([[1, 1, 1],
-                       [1, 0, 1],
-                       [1, 1, 1]])
-    neighbor_count = convolve2d(grid, kernel, mode="same", boundary=conv_boundary, fillvalue=0.0)
-    birth = (neighbor_count == 3) & (grid == 0)
-    survival = ((neighbor_count == 2) | (neighbor_count == 3)) & (grid == 1)
-    grid_next = np.where(birth | survival, 1, 0)
-    return grid_next.astype(float)
+def next_gen(grid, boundary_mode, method="auto"):
+    """Advance binary Life; select byte sums or packed bits by grid size.
+
+    Explicit methods are "dense", "packed", and "lookup". All preserve the
+    float64 matrix interface and wrap/open/fill boundary behavior.
+    """
+    return next_generation(grid, boundary_mode, method)
 
 
-def main():
+def main(life_engine="auto"):
+    import matplotlib.pyplot as plt
+    import matplotlib.widgets as widgets
+    import matplotlib.animation as animation
+    from matplotlib.patches import Rectangle
+    from matplotlib.widgets import Slider, Button, CheckButtons, RadioButtons
+
     N = 150
     global current_grid, fade_grid, img, color, is_dragging, tail_color, is_running, ani, tail_fade_rate, selected_color, perc_text, boundary_mode
     current_grid = _init_grid(N, 0.1).astype(float)
@@ -268,7 +263,7 @@ def main():
         global current_grid, fade_grid, img, color, is_running, perc_text, boundary_mode
         if not is_running:
             return img,
-        current_grid = next_gen(current_grid, boundary_mode)
+        current_grid = next_gen(current_grid, boundary_mode, method=life_engine)
         fade_grid = update_alpha(current_grid, fade_grid, tail_fade_rate)
         rgba_array = update_rgba(current_grid, fade_grid, color, tail_color)
         img.set_data(rgba_array)
@@ -361,5 +356,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    from life_stream import build_parser, run
+
+    options = build_parser().parse_args()
+    if options.streamdiffusion:
+        run(options, lambda grid, boundary: next_gen(grid, boundary, method=options.life_engine))
+    else:
+        main(life_engine=options.life_engine)
 

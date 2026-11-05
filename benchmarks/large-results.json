@@ -1,0 +1,104 @@
+{
+  "python": "3.12.13",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "numpy": "2.5.1",
+  "scipy": "1.18.1",
+  "density": 0.2,
+  "dtype": "float64",
+  "repeats": 3,
+  "scope": "one CPU generation; includes all packing, unpacking, allocation and float64 output; excludes GUI/GPU",
+  "results": [
+    {
+      "size": 8192,
+      "boundary": "wrap",
+      "engine": "numpy_float",
+      "median_ms": 1457.346899958793,
+      "min_ms": 1405.3850999916904,
+      "samples_ms": [
+        1457.346899958793,
+        1473.461400019005,
+        1405.3850999916904
+      ],
+      "calls_per_sample": 1
+    },
+    {
+      "size": 8192,
+      "boundary": "wrap",
+      "engine": "scipy_signal_float",
+      "median_ms": 1365.6632999773137,
+      "min_ms": 1361.0429000109434,
+      "samples_ms": [
+        1373.2740000123158,
+        1361.0429000109434,
+        1365.6632999773137
+      ],
+      "calls_per_sample": 1
+    },
+    {
+      "size": 8192,
+      "boundary": "wrap",
+      "engine": "scipy_signal_uint8",
+      "median_ms": 1144.7464000084437,
+      "min_ms": 1134.6238999976777,
+      "samples_ms": [
+        1134.6238999976777,
+        1144.7464000084437,
+        1151.320799952373
+      ],
+      "calls_per_sample": 1
+    },
+    {
+      "size": 8192,
+      "boundary": "wrap",
+      "engine": "scipy_ndimage_uint8",
+      "median_ms": 539.9758000276051,
+      "min_ms": 538.517800043337,
+      "samples_ms": [
+        545.0691000442021,
+        538.517800043337,
+        539.9758000276051
+      ],
+      "calls_per_sample": 1
+    },
+    {
+      "size": 8192,
+      "boundary": "wrap",
+      "engine": "numpy_uint8_separable",
+      "median_ms": 298.2681999565102,
+      "min_ms": 295.66930001601577,
+      "samples_ms": [
+        295.66930001601577,
+        305.1355000352487,
+        298.2681999565102
+      ],
+      "calls_per_sample": 1
+    },
+    {
+      "size": 8192,
+      "boundary": "wrap",
+      "engine": "lookup_4x4",
+      "median_ms": 511.21200004126877,
+      "min_ms": 464.245600043796,
+      "samples_ms": [
+        511.21200004126877,
+        464.245600043796,
+        517.0787000097334
+      ],
+      "calls_per_sample": 1
+    },
+    {
+      "size": 8192,
+      "boundary": "wrap",
+      "engine": "packed_uint64",
+      "median_ms": 209.6476000151597,
+      "min_ms": 204.49479995295405,
+      "samples_ms": [
+        213.06059998460114,
+        204.49479995295405,
+        209.6476000151597
+      ],
+      "calls_per_sample": 1
+    }
+  ]
+}

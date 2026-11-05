@@ -128,6 +128,7 @@ gol_maps_to = [
     int(sum(local[1:]) == 3 or (local[0] == 1 and sum(local[1:]) == 2))
     for local in np.ndindex(*(2,) * 9)
 ]
+print(gol_maps_to)  # This will print the mapping for each local configuration in the Game of Life.
 gol_maps_to = [
     int(
         sum(local[1:]) == 3
@@ -136,6 +137,7 @@ gol_maps_to = [
     for local in np.ndindex(*(2,) * 9)
 ]
 
+
 rule = DeterministicRule(num_states=2, maps_to=gol_maps_to)
 
-print(rule.mapping) 
+#print(rule.mapping) 
