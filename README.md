@@ -2,10 +2,10 @@
 
 This is a Python implementation of Conway's Game of Life. The Game of Life is a cellular automaton devised by the British mathematician John Horton Conway in 1970. It's a zero-player game, meaning that its evolution is determined by its initial state, requiring no further input. One interacts with the Game of Life by creating an initial configuration and observing how it evolves.
 
-## Web demos (ready for GitHub Pages)
+## Web demos
 
-- A browser-native Game of Life and a Belousov–Zhabotinsky visualizer live in `docs/`. Open `docs/index.html` locally or point GitHub Pages at the `docs/` folder (Settings → Pages → Source: `main` / `/docs`) to publish.
-- Direct entry points: `docs/game-of-life.html` and `docs/bz-visualization.html` (shared styling in `docs/style.css`).
+A browser-native Game of Life and a Belousov–Zhabotinsky visualizer live in `docs/`. Open `docs/index.html` locally or [view it online](https://sgt1796.github.io/Game_of_life/).
+
 
 ## Rules
 
@@ -124,7 +124,7 @@ or `--t-indices 20 35` for a more freely imagined result.
 Run `python Game_of_Life.py --help` for all options. These options apply to the
 diffusion view; the original view retains its existing defaults and controls.
 
-### Running the Game
+### Running Game of Life
 
 1. **Python Source Code**:
    - To run the game, execute the `Game_of_Life.py` script using Python:
@@ -140,6 +140,3 @@ diffusion view; the original view retains its existing defaults and controls.
 3. **Webpage Version**:
    - The repository also includes a webpage version (`game_of_life.html`) that provides a comprehensive explanation of the Game of Life, converted from R Markdown files with implementation of Game of Life using R.
   
-## Conclusion
-
-This implementation of Conway's Game of Life provides a flexible and interactive way to explore cellular automata.    
