@@ -24,7 +24,74 @@ The initial pattern constitutes the 'seed' of the system. The first generation i
 
 The implementation uses Python libraries NumPy for numerical operations and Matplotlib for visualization. The `next_gen` function uses convolution to apply the Game of Life rules efficiently. The program includes features like interactive grid color adjustments, real-time updates, and a fading effect to visualize cell lifespans.
 
+## Faster Life updates
+
+`next_gen(grid, boundary_mode, method="auto")` now uses byte-based separable
+neighborhood sums for small boards and 64-bit packed cell updates for boards
+with at least 65,536 cells and 128 columns. Each engine accepts binary matrices,
+returns a float64 matrix, and preserves wrap/open/fill boundaries.
+
+Choose a method explicitly with `method="dense"`, `"packed"`, or `"lookup"` in
+Python, or `--life-engine packed` when launching either view. The lookup engine
+uses a cached 64 KiB table that maps every 4-by-4 block to the next central
+2-by-2 cells. The packed engine performs neighbor counting on 64 cells per
+machine word using bitwise operations. Neither needs SciPy.
+
+[Benchmark results and Golly implementation notes](benchmarks/README.md) compare
+seven implementations on matrices up to 8192-by-8192. These are independent
+NumPy implementations of packed-bit and block-lookup techniques, not a full
+port of Golly's sparse QuickLife engine or its HashLife algorithm.
+
 ## Usage
+
+### Live StreamDiffusion rendering from the numerical grid
+
+The optional renderer passes the NumPy Life matrix and its fading history directly
+to StreamDiffusion as a colored RGB image. There is no screen capture and generated
+pixels never change the simulation. The original interactive view remains available
+with `python Game_of_Life.py`.
+
+With StreamDiffusion installed beside this repository, run in PowerShell:
+
+```powershell
+& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' --streamdiffusion
+```
+
+The new window shows the matrix input and live diffusion output side by side.
+Choose Bioluminescent, Botanical, or Cosmic; edit the prompt and click Apply prompt.
+Draw live cells with the left mouse button, erase with the right, and use Pause,
+Reseed, Clear, the boundary selector, and the Life steps/s slider to explore.
+Save images writes PNGs to `renders/life/`.
+
+Defaults are a 64-by-64 simulation rendered at 512-by-512, eight Life generations
+per second, a fixed seed, and the locally cached `KBlueLeaf/kohaku-v2.1` model with
+LCM-LoRA and TinyVAE. Coarser cells and luminous trails give diffusion larger shapes
+to interpret. Model loading and inference run in a background thread; only the
+latest pending input is kept, so slow inference does not build a frame backlog.
+There is some pipeline delay between the two views. Frame-to-frame consistency
+and exact visible cell preservation are not guaranteed by image diffusion.
+
+```powershell
+# Set a different look, prompt, or simulation resolution.
+& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' --streamdiffusion --style Cosmic --grid-size 96 --fps 6
+
+# Render reproducible PNG comparisons without opening a window.
+& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' --streamdiffusion --render-frames 4
+```
+
+Use `--stream-root 'C:\path\to\StreamDiffusion'` for another installation location.
+The diffusion view needs NumPy, Pillow, Tkinter, and the installed StreamDiffusion
+dependencies. The original view uses Matplotlib; the Life step does not require SciPy.
+Models load offline by default. Add `--allow-download` if the model, LCM-LoRA,
+or `madebyollin/taesd` weights are missing from the Hugging Face cache.
+
+Start with `--acceleration none`, which still runs PyTorch on CUDA. Optional
+`--acceleration tensorrt` may build engines in `renders/engines/` on first use.
+`--t-indices 28 40` selects two stages from the 50-step schedule for an organic
+reinterpretation. Try `--t-indices 35 45` to retain more of the source structure,
+or `--t-indices 20 35` for a more freely imagined result.
+Run `python Game_of_Life.py --help` for all options. These options apply to the
+diffusion view; the original view retains its existing defaults and controls.
 
 ### Running the Game
 
