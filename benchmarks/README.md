@@ -1,4 +1,4 @@
-# Life engine benchmarks and Golly investigation
+# Test and benchmarks for several GoL algorithms
 
 Measured locally on 2026-11-05 with Python 3.12.13, NumPy 2.5.1, and SciPy 1.18.1.
 `benchmark_life.py` compares all eight methods in the same runner and saves their
@@ -14,10 +14,8 @@ GUI drawing, fading trails, RGB conditioning, and diffusion inference are exclud
 | NumPy separable sums (uint8) | 1 byte per cell | Horizontal sums, then vertical sums |
 | Block lookup (4×4 → 2×2) | 16-bit neighborhood codes | Look up four output cells together |
 | Bit-parallel Life (uint64) | 1 bit per cell during computation | Bitwise neighbor counting |
-| QuickLife-inspired tiled lookup | Packed 4-by-8 uint32 slices, two buffers | Block lookup, alternating alignment, dirty 32-by-32 tiles |
+| QuickLife tiled lookup | Packed 4-by-8 uint32 slices, two buffers | Block lookup, alternating alignment, dirty 32-by-32 tiles |
 
-The three Golly-inspired methods are independent NumPy implementations in
-`life_engines.py`. They do not call Golly's native engine.
 
 ## Fixed-input performance by grid size
 
@@ -42,7 +40,7 @@ Both panels include all eight methods, including QuickLife.
 
 ### Wrap boundary, milliseconds per generation
 
-| Grid | NumPy shifted sums (float64) | SciPy signal convolution (float64) | SciPy signal convolution (uint8) | SciPy ndimage convolution (uint8) | NumPy separable sums (uint8) | Block lookup (4×4 → 2×2) | Bit-parallel Life (uint64) | QuickLife-inspired tiled lookup |
+| Grid | NumPy shifted sums (float64) | SciPy signal convolution (float64) | SciPy signal convolution (uint8) | SciPy ndimage convolution (uint8) | NumPy separable sums (uint8) | Block lookup (4×4 → 2×2) | Bit-parallel Life (uint64) | QuickLife tiled lookup |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | 64 x 64 | 0.039 | 0.068 | 0.068 | 0.034 | 0.026 | 0.043 | 0.036 | 0.206 |
 | 150 x 150 | 0.102 | 0.330 | 0.351 | 0.145 | 0.060 | 0.108 | 0.064 | 0.264 |
@@ -100,7 +98,7 @@ dtypes describe internal computation, while all methods return float64 matrices.
 
 ### Evolving 1024-by-1024 wrap boards, milliseconds per generation
 
-| Pattern | NumPy shifted sums (float64) | SciPy signal convolution (float64) | SciPy signal convolution (uint8) | SciPy ndimage convolution (uint8) | NumPy separable sums (uint8) | Block lookup (4×4 → 2×2) | Bit-parallel Life (uint64) | QuickLife-inspired tiled lookup |
+| Pattern | NumPy shifted sums (float64) | SciPy signal convolution (float64) | SciPy signal convolution (uint8) | SciPy ndimage convolution (uint8) | NumPy separable sums (uint8) | Block lookup (4×4 → 2×2) | Bit-parallel Life (uint64) | QuickLife tiled lookup |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Random | 22.059 | 20.371 | 17.863 | 8.273 | 4.409 | 6.720 | 2.580 | 4.039 |
 | Glider | 22.204 | 21.350 | 18.887 | 8.471 | 4.633 | 6.771 | 2.412 | 2.274 |
@@ -112,11 +110,11 @@ All measurements live in the shared [main results](results.json),
 [8192 results](large-results.json), and [crossover results](crossover.json).
 Filter rows by `workload` (`fixed` or `evolving`) and `pattern` before comparing.
 
-## QuickLife implementation
+## QuickLife implementation (partial)
 
 `QuickLifeEngine` in `life_engines.py` reconstructs the packed-storage plus
 block-lookup organization of QuickLife for this application's finite boards.
-It is independently written NumPy code; it does not claim Golly's performance.
+It is independently written NumPy code; and compared with Golly, this core still lacks sparse dynamically growing hierarchy, finer change flags and cache-oriented tree traversal.
 
 1. State stays packed between generations: each uint32 contains a 4-column by
    8-row slice. A 32-by-32 tile comprises four slice rows and eight slice columns.
@@ -153,15 +151,7 @@ snapshot does not change the engine. `next_gen(..., method="quicklife")` and
 `step_quicklife` construct a fresh engine for each matrix call, so retaining
 `QuickLifeEngine` is necessary for persistence and skipping.
 
-Compared with Golly, this core still lacks native compiled execution, a sparse
-dynamically growing hierarchy, finer change flags, cache-oriented tree traversal,
-and full rule-family support. It scans flat flags and recomputes whole dirty
-32-by-32 tiles on a fixed-size Conway B3/S23 board. Python dispatch and temporary
-NumPy arrays remain in the update loop.
 
-Validation covered all 512 binary 3-by-3 neighborhoods, odd/narrow dimensions,
-wrapped edges, edits in both phases, boundary changes, still-life/period-two
-reuse, and application state. The benchmark independently verifies its outputs.
 
 ## How Golly makes Life fast
 
