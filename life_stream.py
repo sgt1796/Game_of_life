@@ -58,8 +58,8 @@ def build_parser():
     parser.add_argument("--density", type=float, default=0.20)
     parser.add_argument("--fade", type=float, default=0.12, help="Trail opacity lost per generation.")
     parser.add_argument("--boundary", choices=["wrap", "open", "fill"], default="wrap")
-    parser.add_argument("--life-engine", choices=["auto", "dense", "packed", "lookup"], default="auto",
-                        help="Life update engine; auto selects byte sums or packed bits by matrix size.")
+    parser.add_argument("--life-engine", choices=["auto", "dense", "packed", "lookup", "quicklife"], default="auto",
+                        help="Life engine; quicklife combines persistent packed slices, lookup and dirty tiles.")
     parser.add_argument("--seed", type=int, default=2)
     parser.add_argument("--acceleration", choices=["none", "xformers", "tensorrt"], default="none")
     parser.add_argument("--t-indices", type=int, nargs="+", default=[28, 40],
@@ -90,6 +90,7 @@ class LifeState:
         self.args = args
         self.step = step
         self.rng = np.random.default_rng(args.seed)
+        self.engine = None
         self.reset()
 
     def reset(self, clear=False):
@@ -100,9 +101,21 @@ class LifeState:
             self.grid.flat[indices] = 1
         self.trails = self.grid.copy()
         self.generation = 0
+        if self.args.life_engine == "quicklife":
+            from life_engines import QuickLifeEngine
+            if self.engine is None:
+                self.engine = QuickLifeEngine(self.grid, self.args.boundary)
+            else:
+                self.engine.set_boundary(self.args.boundary)
+                self.engine.load(self.grid)
 
     def advance(self):
-        self.grid = self.step(self.grid, self.args.boundary)
+        if self.engine is None:
+            self.grid = self.step(self.grid, self.args.boundary)
+        else:
+            self.engine.set_boundary(self.args.boundary)
+            self.engine.step()
+            self.grid = self.engine.to_numpy()
         self.trails = np.where(self.grid == 1, 1, np.maximum(0, self.trails - self.args.fade))
         self.generation += 1
 
@@ -110,6 +123,8 @@ class LifeState:
         if 0 <= y < self.grid.shape[0] and 0 <= x < self.grid.shape[1]:
             self.grid[y, x] = int(alive)
             self.trails[y, x] = int(alive)
+            if self.engine is not None:
+                self.engine.set_cell(x, y, alive)
 
 
 def matrix_to_image(grid, trails, style="Bioluminescent", size=512):

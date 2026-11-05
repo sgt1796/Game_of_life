@@ -26,21 +26,52 @@ The implementation uses Python libraries NumPy for numerical operations and Matp
 
 ## Faster Life updates
 
+A combined, persistent QuickLife-style core is now available with
+`--life-engine quicklife`. It combines 4-by-8 packed slices, the block lookup,
+alternating alignment, two generation buffers, and dirty-tile skipping. Both
+views use its persistent state for edits and updates. Read the
+[engine design, remaining gaps, and shared benchmarks](benchmarks/README.md#quicklife-implementation).
+
+```powershell
+& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' --streamdiffusion --life-engine quicklife
+```
+
 `next_gen(grid, boundary_mode, method="auto")` now uses byte-based separable
 neighborhood sums for small boards and 64-bit packed cell updates for boards
 with at least 65,536 cells and 128 columns. Each engine accepts binary matrices,
 returns a float64 matrix, and preserves wrap/open/fill boundaries.
 
-Choose a method explicitly with `method="dense"`, `"packed"`, or `"lookup"` in
+Choose a method explicitly with `method="dense"`, `"packed"`, `"lookup"`, or `"quicklife"` in
 Python, or `--life-engine packed` when launching either view. The lookup engine
 uses a cached 64 KiB table that maps every 4-by-4 block to the next central
 2-by-2 cells. The packed engine performs neighbor counting on 64 cells per
 machine word using bitwise operations. Neither needs SciPy.
 
+All four engines live in `life_engines.py`. To preserve QuickLife's packed state
+between generations in Python:
+
+```python
+from life_engines import QuickLifeEngine
+
+engine = QuickLifeEngine(grid, boundary="wrap")
+engine.step(100)
+grid = engine.to_numpy()
+```
+
 [Benchmark results and Golly implementation notes](benchmarks/README.md) compare
-seven implementations on matrices up to 8192-by-8192. These are independent
+eight implementations, including QuickLife, on matrices up to 8192-by-8192.
+The shared runner measures both fixed-input updates and evolving boards, with
+float64 output for every method. These are independent
 NumPy implementations of packed-bit and block-lookup techniques, not a full
 port of Golly's sparse QuickLife engine or its HashLife algorithm.
+
+![Update times of all eight Life methods on random, glider and block patterns, with starting-grid previews](benchmarks/results.png)
+
+The panels compare milliseconds per generation on the same logarithmic y scale
+as the individual pattern figures; lower is faster. Each shows
+the actual starting pattern; glider and block previews are enlarged. See the
+[benchmark tables and individual timing figures](benchmarks/README.md#evolving-board-performance)
+for all three patterns. GUI drawing and diffusion inference are excluded.
 
 ## Usage
 

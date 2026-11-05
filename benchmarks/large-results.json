@@ -4,99 +4,149 @@
   "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
   "numpy": "2.5.1",
   "scipy": "1.18.1",
+  "measured_at_utc": "2026-11-05T19:39:45.373024+00:00",
   "density": 0.2,
   "dtype": "float64",
   "repeats": 3,
-  "scope": "one CPU generation; includes all packing, unpacking, allocation and float64 output; excludes GUI/GPU",
+  "target_seconds": 0.05,
+  "seed": 2,
+  "fixed_sizes": [
+    8192
+  ],
+  "boundaries": [
+    "wrap"
+  ],
+  "evolving_sizes": [],
+  "patterns": [
+    "random",
+    "glider",
+    "block"
+  ],
+  "scope": {
+    "fixed": "one CPU generation from the same input; includes engine initialization, packing, unpacking, allocation and float64 output",
+    "evolving": "successive CPU generations with float64 output each step; QuickLife retains packed state; setup and two warmup generations recorded separately",
+    "excluded": "one-time lookup construction, GUI drawing, trails and diffusion/GPU inference"
+  },
+  "evolving_generations_per_sample": 24,
+  "evolving_warmup_generations": 2,
   "results": [
     {
       "size": 8192,
       "boundary": "wrap",
+      "workload": "fixed",
+      "pattern": "random",
       "engine": "numpy_float",
-      "median_ms": 1457.346899958793,
-      "min_ms": 1405.3850999916904,
+      "median_ms": 1499.5723000029102,
+      "min_ms": 1481.3426000182517,
       "samples_ms": [
-        1457.346899958793,
-        1473.461400019005,
-        1405.3850999916904
+        1481.3426000182517,
+        1499.5723000029102,
+        1520.3286000178196
       ],
       "calls_per_sample": 1
     },
     {
       "size": 8192,
       "boundary": "wrap",
+      "workload": "fixed",
+      "pattern": "random",
       "engine": "scipy_signal_float",
-      "median_ms": 1365.6632999773137,
-      "min_ms": 1361.0429000109434,
+      "median_ms": 1390.1073000160977,
+      "min_ms": 1386.9846000452526,
       "samples_ms": [
-        1373.2740000123158,
-        1361.0429000109434,
-        1365.6632999773137
+        1390.1073000160977,
+        1398.9563999930397,
+        1386.9846000452526
       ],
       "calls_per_sample": 1
     },
     {
       "size": 8192,
       "boundary": "wrap",
+      "workload": "fixed",
+      "pattern": "random",
       "engine": "scipy_signal_uint8",
-      "median_ms": 1144.7464000084437,
-      "min_ms": 1134.6238999976777,
+      "median_ms": 1141.8071000371128,
+      "min_ms": 1130.5191999999806,
       "samples_ms": [
-        1134.6238999976777,
-        1144.7464000084437,
-        1151.320799952373
+        1152.6657000067644,
+        1141.8071000371128,
+        1130.5191999999806
       ],
       "calls_per_sample": 1
     },
     {
       "size": 8192,
       "boundary": "wrap",
+      "workload": "fixed",
+      "pattern": "random",
       "engine": "scipy_ndimage_uint8",
-      "median_ms": 539.9758000276051,
-      "min_ms": 538.517800043337,
+      "median_ms": 522.7738000103272,
+      "min_ms": 515.2152000227943,
       "samples_ms": [
-        545.0691000442021,
-        538.517800043337,
-        539.9758000276051
+        515.2152000227943,
+        522.7738000103272,
+        525.5788000067696
       ],
       "calls_per_sample": 1
     },
     {
       "size": 8192,
       "boundary": "wrap",
+      "workload": "fixed",
+      "pattern": "random",
       "engine": "numpy_uint8_separable",
-      "median_ms": 298.2681999565102,
-      "min_ms": 295.66930001601577,
+      "median_ms": 293.57149999123067,
+      "min_ms": 292.85269998945296,
       "samples_ms": [
-        295.66930001601577,
-        305.1355000352487,
-        298.2681999565102
+        292.85269998945296,
+        293.57149999123067,
+        297.19170002499595
       ],
       "calls_per_sample": 1
     },
     {
       "size": 8192,
       "boundary": "wrap",
+      "workload": "fixed",
+      "pattern": "random",
       "engine": "lookup_4x4",
-      "median_ms": 511.21200004126877,
-      "min_ms": 464.245600043796,
+      "median_ms": 502.64929997501895,
+      "min_ms": 491.79999995976686,
       "samples_ms": [
-        511.21200004126877,
-        464.245600043796,
-        517.0787000097334
+        504.1149000171572,
+        502.64929997501895,
+        491.79999995976686
       ],
       "calls_per_sample": 1
     },
     {
       "size": 8192,
       "boundary": "wrap",
+      "workload": "fixed",
+      "pattern": "random",
       "engine": "packed_uint64",
-      "median_ms": 209.6476000151597,
-      "min_ms": 204.49479995295405,
+      "median_ms": 202.22800003830343,
+      "min_ms": 196.603300049901,
       "samples_ms": [
-        213.06059998460114,
-        204.49479995295405,
-        209.6476000151597
+        196.603300049901,
+        202.22800003830343,
+        215.2019999921322
+      ],
+      "calls_per_sample": 1
+    },
+    {
+      "size": 8192,
+      "boundary": "wrap",
+      "workload": "fixed",
+      "pattern": "random",
+      "engine": "quicklife",
+      "median_ms": 586.7567000095733,
+      "min_ms": 576.329400006216,
+      "samples_ms": [
+        586.7567000095733,
+        589.0439000213519,
+        576.329400006216
       ],
       "calls_per_sample": 1
     }
