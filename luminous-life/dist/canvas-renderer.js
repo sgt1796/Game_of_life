@@ -10,7 +10,7 @@ export function createCanvasRenderer(canvas){
   g.shadowBlur=0;g.filter='blur(2.5px)';g.fillStyle=v?'#dfd9ff':'#d0fdff';g.fillRect(55,55,18,18);return c;
  });
  return ({now,cells,ghosts,camera,basis:b,glow,showGrid,planePoint})=>{
-  const dpr=Math.min(devicePixelRatio||1,1.5),w=innerWidth,h=innerHeight;
+  const dpr=Math.min(devicePixelRatio||1,matchMedia('(pointer: coarse)').matches?1.4:1.5),w=canvas.clientWidth,h=canvas.clientHeight;
   if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   const bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#040a17');bg.addColorStop(.65,'#061424');bg.addColorStop(1,'#030b14');ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);

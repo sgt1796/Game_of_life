@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#030a14"><meta name="description" content="An infinite, luminous Game of Life. Explore a living world from a 45-degree perspective.">
 <title>LIFE — A luminous cellular automaton</title>
 <link rel="stylesheet" href="style.css">
@@ -16,12 +16,13 @@
 <aside class="tools" aria-label="Scene tools">
   <button id="pan" class="tool active" title="Pan (V)" aria-label="Pan mode" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg></button>
   <button id="draw" class="tool" title="Draw cells (D)" aria-label="Draw mode" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m4 16-1 5 5-1L20 8l-4-4L4 16ZM13 7l4 4"/></svg></button>
+  <button id="erase" class="tool" title="Erase cells (E)" aria-label="Erase mode" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m4 14 9-10a2 2 0 0 1 3 0l5 5a2 2 0 0 1 0 3l-8 8H8l-4-4a2 2 0 0 1 0-2ZM9 9l9 9M13 20h8"/></svg></button>
   <div class="rule"></div>
   <button id="home" class="tool" title="Recenter camera (H)" aria-label="Recenter camera"><svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/><circle cx="12" cy="12" r="3"/></svg></button>
-  <button id="settingsButton" class="tool" title="Appearance" aria-label="Appearance settings" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M5 3v18M12 3v18M19 3v18M2 8h6M9 16h6M16 9h6"/><circle cx="5" cy="8" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="19" cy="9" r="2"/></svg></button>
+  <button id="settingsButton" class="tool" title="Appearance" aria-label="Appearance settings" aria-controls="settings" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M5 3v18M12 3v18M19 3v18M2 8h6M9 16h6M16 9h6"/><circle cx="5" cy="8" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="19" cy="9" r="2"/></svg></button>
 </aside>
 <section id="settings" class="settings" hidden>
- <div class="panel-title">ATMOSPHERE <span>01</span></div>
+ <div class="panel-title">ATMOSPHERE <button id="closeSettings" aria-label="Close appearance settings" title="Close"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
  <label for="engine">Python engine</label>
  <select id="engine" disabled><option value="auto">Auto</option><option value="dense">Dense</option><option value="packed">Packed</option><option value="lookup">Lookup</option><option value="quicklife">QuickLife</option></select>
  <label>Bloom <output id="glowValue">70%</output><input id="glow" aria-label="Bloom intensity" type="range" min="0" max="100" value="70"></label>
