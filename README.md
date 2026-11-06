@@ -9,6 +9,8 @@ Game of Life, **Luminous Life**, the BZ visualizer, and Wolfram CA. Both Life vi
 run the current Python/NumPy core in a browser worker. The engine selector offers
 Auto (the default), Dense, Packed, Lookup, and QuickLife. Switching engines keeps
 the field, generation, and play state. Luminous retains its growing world.
+On phones, Luminous supports one-finger panning, pinch zoom, Draw and Erase
+tools, and controls arranged for portrait and landscape screens.
 
 ### Build and preview GitHub Pages
 
