@@ -22,7 +22,7 @@ The initial pattern constitutes the 'seed' of the system. The first generation i
 
 ## Implementation
 
-The implementation uses Python libraries NumPy for numerical operations and Matplotlib for visualization. The `next_gen` function uses convolution to apply the Game of Life rules efficiently. The program includes features like interactive grid color adjustments, real-time updates, and a fading effect to visualize cell lifespans.
+The implementation uses Python libraries NumPy for numerical operations and Matplotlib for visualization. `Game_of_Life.py` owns the simulation controller, including grid initialization, generation updates, seeding, reset/clear, pause/resume, and boundary selection. `Game_of_Life_UI.py` contains the Matplotlib layout, controls, event handlers, and fading/color rendering. The numerical engines remain in `life_engines.py`. Launch the desktop application with `python Game_of_Life.py run`.
 
 ## Faster Life updates
 
@@ -33,7 +33,7 @@ views use its persistent state for edits and updates. Read the
 [engine design, remaining gaps, and shared benchmarks](benchmarks/README.md#quicklife-implementation).
 
 ```powershell
-& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' --streamdiffusion --life-engine quicklife
+& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' streamdiffusion --life-engine quicklife
 ```
 
 `next_gen(grid, boundary_mode, method="auto")` now uses byte-based separable
@@ -75,17 +75,57 @@ for all three patterns. GUI drawing and diffusion inference are excluded.
 
 ## Usage
 
+Choose an interface subcommand, then put its options after the command:
+
+```sh
+python Game_of_Life.py run --life-engine quicklife
+python Game_of_Life.py webui --port 8001 --no-browser
+python Game_of_Life.py streamdiffusion --style Cosmic --fps 6
+```
+
+`--life-engine` is available in all three subcommands. Web server options belong
+to `webui`; model, rendering, and diffusion simulation options belong to
+`streamdiffusion`. A subcommand is required: use `run` for the desktop UI, and
+replace the former `--webui` and `--streamdiffusion` flags with their command names.
+Run `python Game_of_Life.py --help` to list interfaces, or use `run --help`,
+`webui --help`, or `streamdiffusion --help` to see that interface's options.
+
+### Luminous Life web UI
+
+Run the luminous perspective interface with the Python simulation core:
+
+```sh
+python Game_of_Life.py webui
+# Use the persistent QuickLife engine:
+python Game_of_Life.py webui --life-engine quicklife
+```
+
+The command starts a local server and opens `http://127.0.0.1:8000` in your browser.
+Use `--port 8001` to choose another port, or `--no-browser` to open the URL yourself.
+Press Ctrl+C in the terminal to stop the server. Only Python and NumPy are needed;
+the web view does not import Matplotlib or diffusion dependencies.
+
+Play/pause, single-step, presets, reset, drawing, and erasing use the Python core.
+The browser handles the perspective camera, bloom, grid, and fading trails.
+`UnboundedGameOfLife` in `Game_of_Life.py` grows the numerical board before cells
+reach its edges, preserving the design's unbounded world without wrapping.
+`Game_of_Life_Web.py` serves the frontend in `luminous-life/dist/` and translates
+HTTP commands into core operations. Each server owns one simulation shared by
+its browser tabs. A plain static HTTP server cannot run this connected view.
+
+Run the core and HTTP regression checks with `python -m unittest discover -s tests`.
+
 ### Live StreamDiffusion rendering from the numerical grid
 
 The optional renderer passes the NumPy Life matrix and its fading history directly
 to StreamDiffusion as a colored RGB image. There is no screen capture and generated
 pixels never change the simulation. The original interactive view remains available
-with `python Game_of_Life.py`.
+with `python Game_of_Life.py run`.
 
 With StreamDiffusion installed beside this repository, run in PowerShell:
 
 ```powershell
-& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' --streamdiffusion
+& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' streamdiffusion
 ```
 
 The new window shows the matrix input and live diffusion output side by side.
@@ -104,10 +144,10 @@ and exact visible cell preservation are not guaranteed by image diffusion.
 
 ```powershell
 # Set a different look, prompt, or simulation resolution.
-& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' --streamdiffusion --style Cosmic --grid-size 96 --fps 6
+& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' streamdiffusion --style Cosmic --grid-size 96 --fps 6
 
 # Render reproducible PNG comparisons without opening a window.
-& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' --streamdiffusion --render-frames 4
+& '..\StreamDiffusion\.venv\Scripts\python.exe' '.\Game_of_Life.py' streamdiffusion --render-frames 4
 ```
 
 Use `--stream-root 'C:\path\to\StreamDiffusion'` for another installation location.
@@ -121,7 +161,7 @@ Start with `--acceleration none`, which still runs PyTorch on CUDA. Optional
 `--t-indices 28 40` selects two stages from the 50-step schedule for an organic
 reinterpretation. Try `--t-indices 35 45` to retain more of the source structure,
 or `--t-indices 20 35` for a more freely imagined result.
-Run `python Game_of_Life.py --help` for all options. These options apply to the
+Run `python Game_of_Life.py streamdiffusion --help` for all diffusion options. These options apply to the
 diffusion view; the original view retains its existing defaults and controls.
 
 ### Running Game of Life
@@ -129,9 +169,9 @@ diffusion view; the original view retains its existing defaults and controls.
 1. **Python Source Code**:
    - To run the game, execute the `Game_of_Life.py` script using Python:
      ```sh
-     python Game_of_Life.py
+     python Game_of_Life.py run
      ```
-   - Or run it in any Python IDE.
+   - Or run it in any Python IDE with `run` as the script argument.
    - The script initializes a 150x150 grid with a random distribution of live cells and starts the simulation. Use the interactive controls to adjust settings such as fade rate, cell colors, and seeding ratio.
 
 2. **Executable Version**:
@@ -139,4 +179,4 @@ diffusion view; the original view retains its existing defaults and controls.
 
 3. **Webpage Version**:
    - The repository also includes a webpage version (`game_of_life.html`) that provides a comprehensive explanation of the Game of Life, converted from R Markdown files with implementation of Game of Life using R.
-  
+

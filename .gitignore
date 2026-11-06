@@ -1,4 +1,7 @@
 dist/
+# Luminous Life's buildless frontend is source, not generated output.
+!luminous-life/dist/
+!luminous-life/dist/**
 *.exe
 __pycache__/
 *.pyc

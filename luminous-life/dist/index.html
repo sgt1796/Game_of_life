@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#030a14"><meta name="description" content="An infinite, luminous Game of Life. Explore a living world from a 45-degree perspective.">
+<title>LIFE — A luminous cellular automaton</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="world" aria-label="Interactive Game of Life grid. Drag to pan, scroll to zoom, or use Draw mode to edit cells."></canvas>
+<div class="vignette"></div>
+<header>
+  <div class="brand"><h1>LIFE<span class="brand-dot"></span></h1><p>A CELLULAR AUTOMATON</p></div>
+  <div class="stats"><div><span>GENERATION</span><strong id="generation">00000</strong></div><i></i><div><span>POPULATION</span><strong id="population">0</strong></div><span class="status" id="status" aria-live="polite">CONNECTING</span></div>
+</header>
+<aside class="tools" aria-label="Scene tools">
+  <button id="pan" class="tool active" title="Pan (V)" aria-label="Pan mode" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg></button>
+  <button id="draw" class="tool" title="Draw cells (D)" aria-label="Draw mode" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m4 16-1 5 5-1L20 8l-4-4L4 16ZM13 7l4 4"/></svg></button>
+  <div class="rule"></div>
+  <button id="home" class="tool" title="Recenter camera (H)" aria-label="Recenter camera"><svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/><circle cx="12" cy="12" r="3"/></svg></button>
+  <button id="settingsButton" class="tool" title="Appearance" aria-label="Appearance settings" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M5 3v18M12 3v18M19 3v18M2 8h6M9 16h6M16 9h6"/><circle cx="5" cy="8" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="19" cy="9" r="2"/></svg></button>
+</aside>
+<section id="settings" class="settings" hidden>
+ <div class="panel-title">ATMOSPHERE <span>01</span></div>
+ <label>Bloom <output id="glowValue">70%</output><input id="glow" aria-label="Bloom intensity" type="range" min="0" max="100" value="70"></label>
+ <label>Camera angle <output id="angleValue">45°</output><input id="angle" aria-label="Camera angle" type="range" min="30" max="80" value="45"></label>
+ <label class="check"><input id="grid" type="checkbox" checked> Show grid</label>
+</section>
+<div class="scene-label"><span class="live-dot"></span><span id="sceneName">THE LIVING FIELD</span><span class="scene-sub">B3 / S23 · UNBOUNDED</span></div>
+<div class="toast" id="toast" role="status"></div>
+<footer>
+ <div class="navigation"><span id="hint">DRAG TO PAN <b>·</b> SCROLL TO ZOOM</span><small id="cameraInfo">45° PERSPECTIVE</small></div>
+ <div class="controls">
+  <button id="play" class="primary" title="Play / Pause (Space)"><svg id="playIcon" viewBox="0 0 20 20"><path d="M6 4v12M14 4v12"/></svg><span id="playText">Pause</span></button>
+  <button id="step" title="Next generation (N)"><svg viewBox="0 0 20 20"><path d="m4 4 9 6-9 6V4ZM16 4v12"/></svg><span>Step</span></button>
+  <button id="reset" title="Reset field (R)"><svg viewBox="0 0 20 20"><path d="M4 7a7 7 0 1 1-1 6M4 2v5h5"/></svg><span>Reset</span></button>
+  <i></i><label class="speed">SPEED <input id="speed" type="range" aria-label="Generations per second" min="1" max="20" value="8"><output id="speedValue">8/s</output></label>
+ </div>
+ <div class="patterns"><label for="pattern">SEED A PATTERN</label><div class="select-wrap"><select id="pattern"><option value="field">Living field</option><option value="gun">Glider gun</option><option value="pulsar">Pulsar</option><option value="glider">Glider</option><option value="rpentomino">R-pentomino</option><option value="empty">Empty canvas</option></select></div></div>
+</footer>
+<div id="error" role="alert" hidden></div>
+<script type="module" src="app.js"></script>
+</body></html>
