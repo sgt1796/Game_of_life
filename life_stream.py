@@ -5,7 +5,6 @@ Life update function changes the numerical grid; generated pixels are display
 output. Heavy model imports happen in the rendering worker, outside the UI.
 """
 
-import argparse
 from pathlib import Path
 from queue import Empty, Full, Queue
 import os
@@ -42,32 +41,6 @@ STYLES = {
     },
 }
 NEGATIVE_PROMPT = "text, letters, watermark, people, faces, blurry, low quality"
-
-
-def build_parser():
-    parser = argparse.ArgumentParser(description="Conway's Life with optional live diffusion rendering.")
-    parser.add_argument("--streamdiffusion", action="store_true", help="Render the matrix with StreamDiffusion.")
-    parser.add_argument("--stream-root", type=Path,
-                        default=Path(__file__).resolve().parent.parent / "StreamDiffusion")
-    parser.add_argument("--model", default="KBlueLeaf/kohaku-v2.1")
-    parser.add_argument("--style", choices=list(STYLES), default="Bioluminescent")
-    parser.add_argument("--prompt", help="Override the selected style's prompt.")
-    parser.add_argument("--grid-size", type=int, default=64, help="Cells per side in diffusion mode.")
-    parser.add_argument("--size", type=int, default=512, help="Output pixels per side; a multiple of 64.")
-    parser.add_argument("--fps", type=float, default=8, help="Life generations per second, independent of GPU speed.")
-    parser.add_argument("--density", type=float, default=0.20)
-    parser.add_argument("--fade", type=float, default=0.12, help="Trail opacity lost per generation.")
-    parser.add_argument("--boundary", choices=["wrap", "open", "fill"], default="wrap")
-    parser.add_argument("--life-engine", choices=["auto", "dense", "packed", "lookup", "quicklife"], default="auto",
-                        help="Life engine; quicklife combines persistent packed slices, lookup and dirty tiles.")
-    parser.add_argument("--seed", type=int, default=2)
-    parser.add_argument("--acceleration", choices=["none", "xformers", "tensorrt"], default="none")
-    parser.add_argument("--t-indices", type=int, nargs="+", default=[28, 40],
-                        help="Ascending indices in a 50-step schedule; higher indices retain more input detail.")
-    parser.add_argument("--allow-download", action="store_true", help="Allow uncached model downloads.")
-    parser.add_argument("--render-frames", type=int, default=0, help="Save this many frames without opening a UI.")
-    parser.add_argument("--output-dir", type=Path, default=Path(__file__).resolve().parent / "renders" / "life")
-    return parser
 
 
 def validate_options(args):
