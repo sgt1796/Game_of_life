@@ -10,6 +10,9 @@
   --shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
 }
 
+button:disabled, select:disabled { opacity: .5; cursor: wait; }
+select { font: inherit; padding: 8px; color: var(--bright); background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
+
 * {
   box-sizing: border-box;
 }

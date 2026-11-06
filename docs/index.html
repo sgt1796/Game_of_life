@@ -10,11 +10,12 @@
   <header>
     <h1>Cellular Automata Playgrounds</h1>
     <p class="lead">
-      Two browser-native experiments: Conway&apos;s Game of Life with painter-style controls and a Belousov-Zhabotinsky-inspired reaction-diffusion field.
-      Everything lives in the <code>docs/</code> folder so you can enable GitHub Pages and publish instantly.
+      Explore Python-powered Game of Life demos, a luminous growing world, and colorful cellular automata.
+      Life runs in your browser using the same Python core as the desktop application.
     </p>
     <div class="button-row" style="justify-content:center; margin-top:16px;">
       <a class="cta" href="./game-of-life.html">Open Game of Life</a>
+      <a class="cta" href="./luminous-life/">Open Luminous Life</a>
       <a class="cta secondary" href="./bz-visualization.html">Open BZ Visualizer</a>
       <a class="cta secondary" href="./wolfram-bz.html">Open Wolfram CA</a>
     </div>
@@ -23,11 +24,18 @@
   <main class="page">
     <div class="demo-grid">
       <div class="demo-card">
+        <div class="pill">Python + luminous rendering</div>
+        <h3>Luminous Life</h3>
+        <p>Explore a growing Life world with a perspective camera, glowing cells, fading trails, and classic patterns. Choose a Python engine without losing your field.</p>
+        <div class="chips"><div class="chip">Python + NumPy</div><div class="chip">Growing world</div><div class="chip">Pan + draw</div></div>
+        <div class="button-row" style="margin-top:12px;"><a class="cta" href="./luminous-life/">Launch</a></div>
+      </div>
+      <div class="demo-card">
         <div class="pill">Interactive canvas</div>
         <h3>Conway&apos;s Game of Life</h3>
         <p>Paint cells directly on the canvas, randomize seeds, tune update speed, and step through generations. Wrapped edges keep patterns moving.</p>
         <div class="chips">
-          <div class="chip">JS + Canvas</div>
+          <div class="chip">Python + Canvas</div>
           <div class="chip">Toroidal grid</div>
           <div class="chip">Brush + drag</div>
         </div>
@@ -76,6 +84,6 @@
     </div>
   </main>
 
-  <footer>Made for quick sharing - no build step required.</footer>
+  <footer>Life runs locally in your browser. Python and NumPy load from this site; the first visit takes longer.</footer>
 </body>
 </html>

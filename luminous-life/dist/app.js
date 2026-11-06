@@ -1,6 +1,7 @@
 import { createCanvasRenderer } from './canvas-renderer.js';
 import { key, patterns } from './life-core.js';
 import { LifeClient } from './life-client.js';
+import { runtimeConfig } from './runtime-config.js';
 const $ = id => document.getElementById(id);
 const canvas = $('world');
 const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'high-performance' });
@@ -75,11 +76,12 @@ gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,3,gl.FLOAT,false,12,0);g
 const uniforms = p => Object.fromEntries(['eye','rightV','upV','forwardV','aspect','lens','bloom','showGrid'].map(n=>[n,gl.getUniformLocation(p,n)]));
 gridU=uniforms(gridProgram); cellU=uniforms(cellsProgram);
 }
-let cells=new Set(), ghosts=new Map(), generation=0, running=true, mode='pan', selected='field';
+let cells=new Set(), ghosts=new Map(), generation=0, population=0, running=true, mode='pan', selected='field';
 const DEFAULT_FIELD_DISTANCE = 58;
 let camera={x:0,y:0,distance:DEFAULT_FIELD_DISTANCE,angle:45,yaw:.20};
 let speed=8, glow=.7, showGrid=1, lastTime=0, accumulator=0, toastTimer;
-const backend = new LifeClient();
+let backend, backendReady=false, enginePending=false, paintTask=null;
+let loadingStatus='Loading Python…';
 let ready=false, resetPending=false, stepPending=false, paintPending=false, revision=0, connectionError=false;
 const pendingPaint=new Map(), optimisticPaint=new Map();
 const stamp=(set,pattern,x,y)=>pattern.forEach(([a,b])=>set.add(key(a+x,b+y)));
@@ -95,35 +97,44 @@ function field(){
  // Python settles the initial field for twelve generations when loading it.
  return set;
 }
-function updateStats(){ $('generation').textContent=String(generation).padStart(5,'0');$('population').textContent=cells.size.toLocaleString(); }
+function updateStats(){ $('generation').textContent=String(generation).padStart(5,'0');$('population').textContent=population.toLocaleString(); }
 function toast(message,duration=2300){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),duration);}
-function setRunning(value){running=value;accumulator=0;$('playText').textContent=value?'Pause':'Play';$('playIcon').innerHTML=value?'<path d="M6 4v12M14 4v12"/>':'<path d="m6 3 10 7-10 7V3Z"/>';$('status').textContent=connectionError?'OFFLINE':!ready?'CONNECTING':value?'EVOLVING':'PAUSED';}
+function gateControls(){
+ for(const id of ['play','step','reset','pattern','engine'])$(id).disabled=!ready||resetPending||enginePending;
+}
+function setRunning(value){running=value;accumulator=0;$('playText').textContent=value?'Pause':'Play';$('playIcon').innerHTML=value?'<path d="M6 4v12M14 4v12"/>':'<path d="m6 3 10 7-10 7V3Z"/>';$('status').textContent=connectionError?'ERROR':!ready?loadingStatus:value?'EVOLVING':'PAUSED';$('loading').textContent=ready?'':loadingStatus;gateControls();}
 function applySnapshot(state,{reset=false,edit=false}={}){
  const next=new Set(state.cells.map(([x,y])=>key(x,y))),now=performance.now();
  for(const [cell,alive] of optimisticPaint){if(alive)next.add(cell);else next.delete(cell);}
  if(reset)ghosts.clear();
  else if(!edit)for(const cell of cells)if(!next.has(cell))ghosts.set(cell,now);
- cells=next;generation=state.generation;updateStats();
+ cells=next;generation=state.generation;population=state.population;$('engine').value=state.engine;updateStats();
 }
 function fail(error,requestRevision){
  if(requestRevision!==revision)return;
  ready=false;connectionError=true;pendingPaint.clear();optimisticPaint.clear();setRunning(false);
- $('error').textContent=error.message;$('error').hidden=false;toast('Connection lost. Reset to reconnect.',6000);
+ $('error').textContent=error.message;$('error').hidden=false;$('retry').hidden=false;
+ $('loading').textContent='Simulation paused';toast('Simulation stopped. Use Retry to reconnect.',6000);
 }
 async function step(count=1){
- if(!ready||resetPending||stepPending)return;
- flushPaint();
+ if(!ready||resetPending||stepPending||enginePending)return;
  stepPending=true;
  const requestRevision=revision;
- try{const state=await backend.step(count);if(requestRevision===revision)applySnapshot(state);}
+ try{
+  await flushPaint();
+  if(pendingPaint.size)await flushPaint();
+  if(requestRevision!==revision||!ready)return;
+  const state=await backend.step(count);if(requestRevision===revision)applySnapshot(state);
+ }
  catch(error){fail(error,requestRevision);}
  finally{stepPending=false;}
 }
 async function reset(){
+ if(!backendReady)return;
  const requestRevision=++revision;
- ready=false;resetPending=true;connectionError=false;pendingPaint.clear();optimisticPaint.clear();
+ ready=false;resetPending=true;enginePending=false;connectionError=false;pendingPaint.clear();optimisticPaint.clear();
  $('error').hidden=true;setRunning(running);
- cells=new Set();ghosts.clear();generation=0;camera.x=0;camera.y=0;
+ cells=new Set();ghosts.clear();generation=0;population=0;camera.x=0;camera.y=0;
  if(selected==='field'){cells=field();camera.distance=DEFAULT_FIELD_DISTANCE;}
  else if(patterns[selected]){const p=patterns[selected];const center=selected==='gun'?[-18,-4]:selected==='pulsar'?[0,0]:[-1,-1];stamp(cells,p,...center);camera.distance=selected==='gun'?48:selected==='pulsar'?32:18;}
  else {camera.distance=45;setRunning(false);setMode('draw');}
@@ -135,7 +146,32 @@ async function reset(){
   if(requestRevision!==revision)return;
   applySnapshot(state,{reset:true});ready=true;setRunning(running);
  }catch(error){fail(error,requestRevision);}
- finally{if(requestRevision===revision)resetPending=false;}
+ finally{if(requestRevision===revision){resetPending=false;gateControls();}}
+}
+async function connect(){
+ const requestRevision=++revision;
+ backend?.dispose();backendReady=false;ready=false;resetPending=false;enginePending=false;
+ connectionError=false;$('error').hidden=true;$('retry').hidden=true;setRunning(running);
+ backend=new LifeClient('',{onStatus:message=>{if(requestRevision===revision){loadingStatus=message;setRunning(running);}}});
+ try{
+  const state=await backend.ready;
+  if(requestRevision!==revision)return;
+  $('engine').value=state.engine;backendReady=true;await reset();
+ }catch(error){fail(error,requestRevision);}
+}
+async function changeEngine(){
+ if(!ready||enginePending)return;
+ const engine=$('engine').value,previousRevision=revision;
+ enginePending=true;gateControls();
+ await flushPaint();
+ if(pendingPaint.size)await flushPaint();
+ if(previousRevision!==revision||!ready){enginePending=false;gateControls();return;}
+ const requestRevision=++revision;ready=false;loadingStatus='Changing engine…';setRunning(running);
+ try{
+  const state=await backend.setEngine(engine);
+  if(requestRevision===revision){applySnapshot(state,{edit:true});ready=true;setRunning(running);}
+ }catch(error){fail(error,requestRevision);}
+ finally{if(requestRevision===revision){enginePending=false;gateControls();}}
 }
 function setMode(value){mode=value;for(const m of ['pan','draw']){$(m).classList.toggle('active',m===value);$(m).setAttribute('aria-pressed',m===value);}
  canvas.classList.toggle('drawing',value==='draw');$('hint').innerHTML=value==='draw'?'DRAG TO DRAW <b>·</b> RIGHT CLICK TO ERASE':'DRAG TO PAN <b>·</b> SCROLL TO ZOOM';if(value==='draw')setRunning(false);
@@ -165,8 +201,8 @@ function draw(now){
 }
 function frame(now){
  const delta=Math.min(now-lastTime,200);lastTime=now;
- flushPaint();
- if(running&&ready&&!resetPending){
+ if(!stepPending&&!enginePending)flushPaint();
+ if(running&&ready&&!resetPending&&!enginePending){
   const interval=1000/speed;accumulator=Math.min(accumulator+delta,interval*3);
   if(!stepPending&&accumulator>=interval){const count=Math.min(3,Math.floor(accumulator/interval));accumulator-=count*interval;step(count);}
  }
@@ -175,6 +211,8 @@ function frame(now){
 $('play').onclick=()=>setRunning(!running);
 $('step').onclick=()=>{setRunning(false);step();};
 $('reset').onclick=()=>{reset();toast('Field reset to its original seed');};
+$('engine').onchange=changeEngine;
+$('retry').onclick=connect;
 $('speed').oninput=e=>{speed=Number(e.target.value);$('speedValue').value=`${speed}/s`;};
 $('glow').oninput=e=>{glow=Number(e.target.value)/100;$('glowValue').value=`${e.target.value}%`;};
 $('angle').oninput=e=>{camera.angle=Number(e.target.value);$('angleValue').value=`${camera.angle}°`;};
@@ -185,30 +223,34 @@ $('settingsButton').onclick=()=>{$('settings').hidden=!$('settings').hidden;$('s
 $('pattern').onchange=e=>{selected=e.target.value;setMode('pan');reset();if(selected!=='empty')setRunning(true);toast(selected==='empty'?'Draw your own starting pattern':'Pattern loaded');};
 let pointer=null,drawValue=true,lastPaint=null;
 function paint(x,y){
- if(!ready||resetPending)return;
+ if(!ready||resetPending||enginePending)return;
  const [a,b]=planePoint(x,y),cell=key(Math.round(a),Math.round(b));
  if(cell===lastPaint)return;
  lastPaint=cell;pendingPaint.set(cell,drawValue);optimisticPaint.set(cell,drawValue);
  if(drawValue)cells.add(cell);else cells.delete(cell);
  ghosts.delete(cell);updateStats();
 }
-async function flushPaint(){
- if(!ready||resetPending||paintPending||!pendingPaint.size)return;
+function flushPaint(){
+ if(paintPending)return paintTask;
+ if(!ready||resetPending||!pendingPaint.size)return Promise.resolve();
  const batch=new Map(pendingPaint),requestRevision=revision;pendingPaint.clear();paintPending=true;
  const changes=[...batch].map(([cell,alive])=>[...cell.split(',').map(Number),alive]);
+ paintTask=(async()=>{
  try{
   const state=await backend.paint(changes);
   if(requestRevision!==revision)return;
   for(const cell of batch.keys())if(!pendingPaint.has(cell))optimisticPaint.delete(cell);
   applySnapshot(state,{edit:true});
  }catch(error){fail(error,requestRevision);}
- finally{paintPending=false;}
+ finally{paintPending=false;paintTask=null;}
+ })();
+ return paintTask;
 }
 canvas.onpointerdown=e=>{canvas.setPointerCapture(e.pointerId);pointer={x:e.clientX,y:e.clientY,id:e.pointerId};if(mode==='draw'){drawValue=e.button!==2;paint(e.clientX,e.clientY);}};
 canvas.onpointermove=e=>{if(!pointer||pointer.id!==e.pointerId)return;if(mode==='pan'){const a=planePoint(pointer.x,pointer.y),b=planePoint(e.clientX,e.clientY);camera.x+=a[0]-b[0];camera.y+=a[1]-b[1];}else paint(e.clientX,e.clientY);pointer.x=e.clientX;pointer.y=e.clientY;};
 const endPointer=()=>{pointer=null;lastPaint=null;};canvas.onpointerup=endPointer;canvas.onpointercancel=endPointer;canvas.oncontextmenu=e=>e.preventDefault();
 canvas.addEventListener('wheel',e=>{e.preventDefault();const before=planePoint(e.clientX,e.clientY);camera.distance=Math.max(9,Math.min(250,camera.distance*Math.exp(e.deltaY*.001)));const after=planePoint(e.clientX,e.clientY);camera.x+=before[0]-after[0];camera.y+=before[1]-after[1];},{passive:false});
 document.addEventListener('keydown',e=>{if(['INPUT','SELECT','BUTTON'].includes(document.activeElement.tagName))return;if(e.code==='Space'){e.preventDefault();setRunning(!running);}if(e.key.toLowerCase()==='n'){setRunning(false);step();}if(e.key.toLowerCase()==='r')reset();if(e.key.toLowerCase()==='d')setMode('draw');if(e.key.toLowerCase()==='v')setMode('pan');if(e.key.toLowerCase()==='h')$('home').click();});
-reset();requestAnimationFrame(frame);
-// Small read-only inspection surface for checking the simulation in development.
-window.life={get generation(){return generation;},get population(){return cells.size;},get running(){return running;},get camera(){return {...camera};},get connected(){return ready;},get busy(){return resetPending||stepPending||paintPending||pendingPaint.size>0;}};
+if(runtimeConfig.demosURL){$('demos').href=runtimeConfig.demosURL;$('demos').hidden=false;}
+connect();requestAnimationFrame(frame);
+window.addEventListener('pagehide',()=>backend?.dispose());

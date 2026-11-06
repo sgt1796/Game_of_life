@@ -33,13 +33,22 @@ class GameOfLife:
     def __init__(self, size=150, seeding_ratio=0.1, life_engine="auto", boundary_mode="wrap"):
         self.size = size
         self.seeding_ratio = seeding_ratio
-        self.life_engine = life_engine
+        self.life_engine = None
         self.boundary_mode = boundary_mode
         self.is_running = True
         self._engine = None
         self.reset()
-        if life_engine == "quicklife":
-            self._engine = QuickLifeEngine(self.grid, boundary_mode)
+        self.set_life_engine(life_engine)
+
+    def set_life_engine(self, name):
+        """Change implementation without changing the world or run state."""
+        if name not in ("auto", "dense", "packed", "lookup", "quicklife"):
+            raise ValueError(f"Unknown Life engine: {name}")
+        if name == self.life_engine:
+            return
+        engine = QuickLifeEngine(self.grid, self.boundary_mode) if name == "quicklife" else None
+        self._engine = engine
+        self.life_engine = name
 
     def step(self):
         """Advance one generation while running, retaining QuickLife state."""

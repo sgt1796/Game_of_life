@@ -11,6 +11,9 @@ __pycache__/
 *.iml
 node_modules/
 .DS_Store
-coverage/
 logs/
 renders/
+_site/
+.site-cache/
+.venv/
+.uv-cache/
