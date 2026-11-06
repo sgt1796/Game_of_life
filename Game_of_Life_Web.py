@@ -8,34 +8,10 @@ import threading
 from urllib.parse import urlsplit
 import webbrowser
 
-from Game_of_Life import UnboundedGameOfLife
+from life_protocol import LifeSession
 
 
 ASSETS = Path(__file__).resolve().parent / "luminous-life" / "dist"
-
-
-def _integer(value, name, minimum, maximum):
-    if type(value) is not int or not minimum <= value <= maximum:
-        raise ValueError(f"{name} must be an integer between {minimum} and {maximum}.")
-    return value
-
-
-def _coordinates(value, painting=False):
-    if not isinstance(value, list) or len(value) > 100_000:
-        raise ValueError("Provide a list of at most 100,000 cells.")
-    result = []
-    for cell in value:
-        if not isinstance(cell, list) or len(cell) != (3 if painting else 2):
-            raise ValueError("Each cell needs x, y coordinates" + (" and an alive flag." if painting else "."))
-        x = _integer(cell[0], "x", -1_000_000, 1_000_000)
-        y = _integer(cell[1], "y", -1_000_000, 1_000_000)
-        if painting:
-            if type(cell[2]) is not bool:
-                raise ValueError("The alive flag must be true or false.")
-            result.append((x, y, cell[2]))
-        else:
-            result.append((x, y))
-    return result
 
 
 class LifeWebServer(ThreadingHTTPServer):
@@ -44,14 +20,13 @@ class LifeWebServer(ThreadingHTTPServer):
     daemon_threads = True
 
     def __init__(self, address=("127.0.0.1", 8000), life_engine="auto"):
-        self.simulation = UnboundedGameOfLife(life_engine=life_engine)
+        self.session = LifeSession(engine=life_engine)
+        self.simulation = self.session.simulation
         self.simulation_lock = threading.Lock()
         super().__init__(address, partial(LifeRequestHandler, directory=str(ASSETS)))
 
     def snapshot(self):
-        cells = self.simulation.living_cells()
-        return {"cells": cells, "generation": self.simulation.generation,
-                "population": len(cells), "engine": self.simulation.life_engine}
+        return self.session.snapshot()
 
 
 class LifeRequestHandler(SimpleHTTPRequestHandler):
@@ -76,7 +51,7 @@ class LifeRequestHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
-        if path not in ("/api/reset", "/api/step", "/api/paint"):
+        if path not in ("/api/reset", "/api/step", "/api/paint", "/api/engine"):
             self._json(404, {"error": "Unknown simulation endpoint."})
             return
         origin = self.headers.get("Origin")
@@ -91,21 +66,7 @@ class LifeRequestHandler(SimpleHTTPRequestHandler):
             if not isinstance(data, dict):
                 raise ValueError("The request must be a JSON object.")
             with self.server.simulation_lock:
-                simulation = self.server.simulation
-                if path == "/api/reset":
-                    cells = _coordinates(data.get("cells"))
-                    warmup = _integer(data.get("warmup", 0), "warmup", 0, 12)
-                    simulation.load_cells(cells)
-                    for _ in range(warmup):
-                        simulation.step()
-                    simulation.generation = 0
-                elif path == "/api/step":
-                    steps = _integer(data.get("steps", 1), "steps", 1, 3)
-                    for _ in range(steps):
-                        simulation.step()
-                else:
-                    simulation.paint_cells(_coordinates(data.get("cells"), painting=True))
-                self._json(200, self.server.snapshot())
+                self._json(200, self.server.session.command(path.removeprefix("/api/"), data))
         except (ValueError, UnicodeDecodeError) as exc:
             self._json(400, {"error": str(exc)})
 

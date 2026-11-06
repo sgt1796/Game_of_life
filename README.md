@@ -4,8 +4,41 @@ This is a Python implementation of Conway's Game of Life. The Game of Life is a 
 
 ## Web demos
 
-A browser-native Game of Life and a Belousov–Zhabotinsky visualizer live in `docs/`. Open `docs/index.html` locally or [view it online](https://sgt1796.github.io/Game_of_life/).
+The [online demos](https://sgt1796.github.io/Game_of_life/) include the classic wrapped
+Game of Life, **Luminous Life**, the BZ visualizer, and Wolfram CA. Both Life views
+run the current Python/NumPy core in a browser worker. The engine selector offers
+Auto (the default), Dense, Packed, Lookup, and QuickLife. Switching engines keeps
+the field, generation, and play state. Luminous retains its growing world.
 
+### Build and preview GitHub Pages
+
+```sh
+python docs/build_site.py
+python -m http.server 8000 --directory _site
+```
+
+Open `http://localhost:8000/`. Serve the built `_site/` directory over HTTP;
+opening HTML directly with `file://` cannot load the Python worker. The builder
+and Pages source live together in `docs/`. The builder uses only Python's
+standard library. It copies the latest root Python modules
+and the Luminous frontend into the artifact, so neither needs a separate source
+copy in `docs/`.
+
+The build pins Pyodide **314.0.7**, verifies the upstream runtime archive and wheel
+checksums, and stages only the runtime and NumPy's dependency closure. Downloads
+are cached in `.site-cache/`; neither this cache nor `_site/` is committed.
+The runtime, standard library, NumPy, and project modules are all served from
+your Pages site, with no runtime CDN or PyPI dependency. The first visit downloads
+Python and NumPy; later visits benefit from normal browser caching. Simulation
+controls wait for initialization, and Retry rebuilds the worker if loading fails.
+Each tab has an independent world. Offline installation is not included.
+
+In the repository's **Settings → Pages → Build and deployment**, select
+**GitHub Actions** as the source. `.github/workflows/pages.yml` builds the site
+for pull requests and deploys successful builds from `master`; it also supports
+manual dispatch. Existing demo URLs stay the same, with Luminous added at
+`/Game_of_life/luminous-life/`. Pages publishes `_site/`, rather than publishing
+the raw `docs/` directory.
 
 ## Rules
 
@@ -110,10 +143,12 @@ The browser handles the perspective camera, bloom, grid, and fading trails.
 `UnboundedGameOfLife` in `Game_of_Life.py` grows the numerical board before cells
 reach its edges, preserving the design's unbounded world without wrapping.
 `Game_of_Life_Web.py` serves the frontend in `luminous-life/dist/` and translates
-HTTP commands into core operations. Each server owns one simulation shared by
-its browser tabs. A plain static HTTP server cannot run this connected view.
-
-Run the core and HTTP regression checks with `python -m unittest discover -s tests`.
+HTTP commands into core operations, sharing `life_protocol.py` with the browser
+worker. Each local server owns one simulation shared by its browser tabs. The
+local command keeps native Python and respects `--life-engine`; it does not
+require the Pages build or a Pyodide download. The deployed Pages view instead
+uses an explicit worker configuration. Both transports support changing engines
+without resetting the world.
 
 ### Live StreamDiffusion rendering from the numerical grid
 

@@ -22,6 +22,8 @@
 </aside>
 <section id="settings" class="settings" hidden>
  <div class="panel-title">ATMOSPHERE <span>01</span></div>
+ <label for="engine">Python engine</label>
+ <select id="engine" disabled><option value="auto">Auto</option><option value="dense">Dense</option><option value="packed">Packed</option><option value="lookup">Lookup</option><option value="quicklife">QuickLife</option></select>
  <label>Bloom <output id="glowValue">70%</output><input id="glow" aria-label="Bloom intensity" type="range" min="0" max="100" value="70"></label>
  <label>Camera angle <output id="angleValue">45°</output><input id="angle" aria-label="Camera angle" type="range" min="30" max="80" value="45"></label>
  <label class="check"><input id="grid" type="checkbox" checked> Show grid</label>
@@ -38,6 +40,9 @@
  </div>
  <div class="patterns"><label for="pattern">SEED A PATTERN</label><div class="select-wrap"><select id="pattern"><option value="field">Living field</option><option value="gun">Glider gun</option><option value="pulsar">Pulsar</option><option value="glider">Glider</option><option value="rpentomino">R-pentomino</option><option value="empty">Empty canvas</option></select></div></div>
 </footer>
+<div id="loading" role="status">Loading Python…</div>
 <div id="error" role="alert" hidden></div>
+<button id="retry" hidden>Retry simulation</button>
+<a id="demos" hidden>← Back to demos</a>
 <script type="module" src="app.js"></script>
 </body></html>

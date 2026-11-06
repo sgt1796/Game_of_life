@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Game of Life – Web Demo</title>
   <link rel="stylesheet" href="./style.css">
-  <script src="./game-of-life.js" defer></script>
+  <script type="module" src="./game-of-life.js"></script>
 </head>
 <body>
   <header>
@@ -22,18 +22,28 @@
         <canvas id="life-canvas"></canvas>
       </div>
       <div class="meta" id="life-hud">Loading…</div>
+      <div class="meta" id="life-status" role="status">Loading Python…</div>
+      <button id="life-retry" hidden>Retry loading Python</button>
     </div>
 
     <div class="card">
       <h3 class="section-title">Controls</h3>
       <div class="button-row">
-        <button id="life-run">Pause</button>
-        <button id="life-step">Step once</button>
-        <button id="life-random">Randomize</button>
-        <button id="life-clear">Clear</button>
+        <button id="life-run" disabled>Pause</button>
+        <button id="life-step" disabled>Step once</button>
+        <button id="life-random" disabled>Randomize</button>
+        <button id="life-clear" disabled>Clear</button>
       </div>
 
       <div class="controls" style="margin-top:14px;">
+        <div class="control">
+          <label for="life-engine">Python engine</label>
+          <select id="life-engine" disabled>
+            <option value="auto">Auto</option><option value="dense">Dense</option>
+            <option value="packed">Packed</option><option value="lookup">Lookup</option>
+            <option value="quicklife">QuickLife</option>
+          </select>
+        </div>
         <div class="control">
           <label for="life-speed">Speed (ms/gen)</label>
           <input type="range" id="life-speed" min="20" max="260" value="90" step="5">
@@ -46,7 +56,7 @@
         </div>
         <div class="control">
           <label for="life-size">Grid resolution</label>
-          <input type="range" id="life-size" min="60" max="220" value="140" step="10">
+          <input type="range" id="life-size" min="60" max="220" value="140" step="10" disabled>
           <span class="value">140 x 140</span>
         </div>
       </div>
