@@ -189,7 +189,7 @@ def build_parser():
     from life_stream import STYLES
 
     parser = argparse.ArgumentParser(
-        description="Conway's Life with desktop, web, and diffusion views.",
+        description="Conway's Life with terminal, desktop, web, and diffusion views.",
         epilog="Run '%(prog)s COMMAND --help' for that interface's options.")
     commands = parser.add_subparsers(dest="command", required=True, title="interfaces")
 
@@ -200,6 +200,18 @@ def build_parser():
     commands.add_parser("run", parents=[common],
                         help="Open the Matplotlib desktop UI.",
                         description="Run the interactive Matplotlib desktop view.")
+
+    terminal = commands.add_parser("cli", parents=[common],
+                                   help="Animate Life in the terminal using filled squares.",
+                                   description="Show live cells as ■ and dead cells as spaces. Stop with Ctrl+C.")
+    terminal.add_argument("--grid-size", type=int, default=None,
+                          help="Cells per side (default: fit the terminal, up to 24).")
+    terminal.add_argument("--fps", type=float, default=8, help="Generations per second (default: 8).")
+    terminal.add_argument("--density", type=float, default=0.2, help="Initial live fraction (default: 0.2).")
+    terminal.add_argument("--boundary", choices=["wrap", "open", "fill"], default="wrap")
+    terminal.add_argument("--seed", type=int, help="Random seed for a repeatable starting grid.")
+    terminal.add_argument("--frames", type=int, default=0,
+                          help="Frames to display, including the initial grid; 0 runs until Ctrl+C.")
 
     webui = commands.add_parser("webui", parents=[common],
                                 help="Open the Luminous Life web UI.",
@@ -242,8 +254,17 @@ def main(life_engine="auto"):
 
 def cli(argv=None):
     """Parse an interface subcommand and launch its view."""
-    options = build_parser().parse_args(argv)
-    if options.command == "webui":
+    parser = build_parser()
+    options = parser.parse_args(argv)
+    if options.command == "cli":
+        from Game_of_Life_CLI import run_cli, validate_options
+
+        try:
+            validate_options(options)
+        except ValueError as error:
+            parser.error(str(error))
+        run_cli(options, GameOfLife)
+    elif options.command == "webui":
         from Game_of_Life_Web import run_webui
 
         run_webui(life_engine=options.life_engine, port=options.port, open_browser=not options.no_browser)

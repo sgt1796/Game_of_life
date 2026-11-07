@@ -114,16 +114,34 @@ Choose an interface subcommand, then put its options after the command:
 
 ```sh
 python Game_of_Life.py run --life-engine quicklife
+python Game_of_Life.py cli --grid-size 20 --fps 8
 python Game_of_Life.py webui --port 8001 --no-browser
 python Game_of_Life.py streamdiffusion --style Cosmic --fps 6
 ```
 
-`--life-engine` is available in all three subcommands. Web server options belong
+`--life-engine` is available in all four subcommands. Web server options belong
 to `webui`; model, rendering, and diffusion simulation options belong to
 `streamdiffusion`. A subcommand is required: use `run` for the desktop UI, and
 replace the former `--webui` and `--streamdiffusion` flags with their command names.
 Run `python Game_of_Life.py --help` to list interfaces, or use `run --help`,
-`webui --help`, or `streamdiffusion --help` to see that interface's options.
+`cli --help`, `webui --help`, or `streamdiffusion --help` to see that interface's options.
+
+### Terminal CLI
+
+```sh
+python Game_of_Life.py cli
+python Game_of_Life.py cli --grid-size 20 --density 0.3 --fps 10 --seed 67 --life-engine quicklife
+python Game_of_Life.py cli --grid-size 10 --seed 67 --frames 5
+```
+
+Live cells appear as `■` (filled square), and dead cells as spaces. The terminal
+animates in place and shows the generation and live-cell count. Press Ctrl+C to
+stop. Only Python and NumPy are required; use a terminal font that supports `■`.
+The default square board fits the terminal, up to 24 cells per side. When choosing
+`--grid-size`, allow two terminal columns per cell and three extra lines.
+`--boundary` accepts `wrap` (default), `open`, or `fill`, as in the other views.
+`--frames N` stops after N displayed frames, counting the initial grid as generation
+0. Redirecting output writes separate UTF-8 frames without terminal control codes.
 
 ### Luminous Life web UI
 
