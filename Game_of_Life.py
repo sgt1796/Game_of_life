@@ -203,7 +203,9 @@ def build_parser():
 
     terminal = commands.add_parser("cli", parents=[common],
                                    help="Animate Life in the terminal using filled squares.",
-                                   description="Show live cells as ■ and dead cells as spaces. Stop with Ctrl+C.")
+                                   description="Show live cells as ■ and dead cells as spaces by default. Stop with Ctrl+C.")
+    terminal.add_argument("--alive", default="■", help="Live-cell character (default: ■, black filled square).")
+    terminal.add_argument("--dead", default=" ", help="Dead-cell character (default: a space).")
     terminal.add_argument("--grid-size", type=int, default=None,
                           help="Cells per side (default: fit the terminal, up to 24).")
     terminal.add_argument("--fps", type=float, default=8, help="Generations per second (default: 8).")

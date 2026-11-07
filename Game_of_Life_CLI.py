@@ -11,6 +11,10 @@ import numpy as np
 
 
 def validate_options(options):
+    for name in ("alive", "dead"):
+        character = getattr(options, name)
+        if len(character) != 1 or not character.isprintable():
+            raise ValueError(f"--{name} must be one printable character (including a space).")
     if options.grid_size is not None and options.grid_size < 1:
         raise ValueError("--grid-size must be positive.")
     if not math.isfinite(options.fps) or options.fps <= 0:
@@ -54,8 +58,8 @@ def terminal_display():
                     console.SetConsoleMode(handle, mode.value)
 
 
-def render_frame(grid, generation):
-    rows = [" ".join("■" if cell else " " for cell in row) for row in grid]
+def render_frame(grid, generation, alive="■", dead=" "):
+    rows = [" ".join(alive if cell else dead for cell in row) for row in grid]
     return f"Generation: {generation} | Alive: {int(grid.sum())}\n" + "\n".join(rows) + "\n"
 
 
@@ -73,7 +77,7 @@ def run_cli(options, simulation_class):
         with terminal_display() as interactive:
             while True:
                 started = time.monotonic()
-                frame = render_frame(simulation.grid, generation)
+                frame = render_frame(simulation.grid, generation, options.alive, options.dead)
                 if interactive:
                     sys.stdout.write("\x1b[H" + frame + "Ctrl+C to stop\x1b[J")
                 else:

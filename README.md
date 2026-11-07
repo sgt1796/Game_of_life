@@ -132,9 +132,13 @@ Run `python Game_of_Life.py --help` to list interfaces, or use `run --help`,
 python Game_of_Life.py cli
 python Game_of_Life.py cli --grid-size 20 --density 0.3 --fps 10 --seed 67 --life-engine quicklife
 python Game_of_Life.py cli --grid-size 10 --seed 67 --frames 5
+python Game_of_Life.py cli --alive "#" --dead "."
 ```
 
-Live cells appear as `■` (filled square), and dead cells as spaces. The terminal
+Live cells default to `■` (black filled square), and dead cells to spaces.
+Set `--alive` and `--dead` to customize these characters, for example
+`--alive "■" --dead " "`. Each accepts one printable character; cells are separated
+by a space. The terminal
 animates in place and shows the generation and live-cell count. Press Ctrl+C to
 stop. Only Python and NumPy are required; use a terminal font that supports `■`.
 The default square board fits the terminal, up to 24 cells per side. When choosing
