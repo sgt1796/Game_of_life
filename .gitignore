@@ -1,4 +1,6 @@
 dist/
+/build/
+*.mp4
 # Luminous Life's buildless frontend is source, not generated output.
 !luminous-life/dist/
 !luminous-life/dist/**
