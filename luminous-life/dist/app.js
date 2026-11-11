@@ -3,6 +3,7 @@ import { installGestures } from './gestures.js';
 import { key, patterns } from './life-core.js';
 import { LifeClient } from './life-client.js';
 import { runtimeConfig } from './runtime-config.js';
+import { selectVoronoiSites, MAX_VORONOI_SITES } from './voronoi.js';
 const $ = id => document.getElementById(id);
 const canvas = $('world');
 const touchInput = matchMedia('(pointer: coarse)');
@@ -12,6 +13,8 @@ const viewport = () => ({ width: canvas.clientWidth, height: canvas.clientHeight
 const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'high-performance' });
 const fallback = gl ? null : createCanvasRenderer(canvas);
 let gridProgram, cellsProgram, buffer, gridU, cellU;
+let voronoiSitesLocation, voronoiCountLocation, voronoiStrengthLocation;
+const siteUniformData = new Float32Array(MAX_VORONOI_SITES * 2);
 if (gl) {
 const shader = (type, source) => {
   const s = gl.createShader(type); gl.shaderSource(s, source); gl.compileShader(s);
@@ -32,6 +35,9 @@ precision highp float;
 in vec2 uv; out vec4 color;
 ${common}
 uniform float showGrid;
+uniform vec2 voronoiSites[24];
+uniform int voronoiCount;
+uniform float voronoiStrength;
 void main(){
  vec3 ray=normalize(forwardV+rightV*uv.x*lens*aspect+upV*uv.y*lens);
  float t=-eye.y/min(ray.y,-.001);vec3 p=eye+ray*t;
@@ -45,6 +51,33 @@ void main(){
  base+=vec3(.025,.17,.23)*(line*.38+bold)*fade*showGrid;
  float center=exp(-length(coord-eye.xz)*.014);
  base+=vec3(.001,.008,.014)*center;
+ if (voronoiStrength > .001 && voronoiCount > 1) {
+   float nearest = 1e18;
+   float second = 1e18;
+   float region = 0.;
+   for (int i = 0; i < 24; i++) {
+     if (i >= voronoiCount) break;
+     vec2 delta = coord - voronoiSites[i];
+     float distanceSquared = dot(delta, delta);
+     if (distanceSquared < nearest) {
+       second = nearest;
+       nearest = distanceSquared;
+       region = float(i);
+     } else if (distanceSquared < second) {
+       second = distanceSquared;
+     }
+   }
+   // Squared-distance difference gives an antialiased distance-to-bisector
+   // approximation. A per-region tint makes territories visible in motion.
+   float gap = max(sqrt(second) - sqrt(nearest), 0.);
+   float edgeAA = max(fwidth(gap), .08);
+   float border = 1. - smoothstep(.10, .24 + edgeAA * 1.6, gap);
+   float shade = .5 + .5 * sin(region * 2.399963);
+   vec3 regionHue = mix(vec3(.018,.12,.18), vec3(.095,.044,.17), shade);
+   float illumination = exp(-t*.0035);
+   base += (regionHue*.26 + regionHue * border*2.2)
+     * illumination * voronoiStrength;
+ }
  color=vec4(base,1);
 }`);
 cellsProgram = program(`#version 300 es
@@ -80,11 +113,14 @@ buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,3,gl.FLOAT,false,12,0);gl.vertexAttribDivisor(0,1);
 const uniforms = p => Object.fromEntries(['eye','rightV','upV','forwardV','aspect','lens','bloom','showGrid'].map(n=>[n,gl.getUniformLocation(p,n)]));
 gridU=uniforms(gridProgram); cellU=uniforms(cellsProgram);
+voronoiSitesLocation = gl.getUniformLocation(gridProgram, 'voronoiSites[0]');
+voronoiCountLocation = gl.getUniformLocation(gridProgram, 'voronoiCount');
+voronoiStrengthLocation = gl.getUniformLocation(gridProgram, 'voronoiStrength');
 }
 let cells=new Set(), ghosts=new Map(), generation=0, population=0, running=true, mode='pan', selected='field';
 const DEFAULT_FIELD_DISTANCE = 58;
 let camera={x:0,y:0,distance:DEFAULT_FIELD_DISTANCE,angle:45,yaw:.20};
-let speed=8, glow=.7, showGrid=1, lastTime=0, accumulator=0, toastTimer;
+let speed=8, glow=.7, showGrid=1, voronoiStrength=0, lastTime=0, accumulator=0, toastTimer;
 let backend, backendReady=false, enginePending=false, paintTask=null;
 let loadingStatus='Loading Python…';
 let ready=false, resetPending=false, stepPending=false, paintPending=false, revision=0, connectionError=false;
@@ -202,11 +238,20 @@ function planePoint(x,y){
 function uploadCamera(p,u,b){gl.useProgram(p);gl.uniform3fv(u.eye,b.eye);gl.uniform3fv(u.rightV,b.right);gl.uniform3fv(u.upV,b.up);gl.uniform3fv(u.forwardV,b.forward);gl.uniform1f(u.aspect,canvas.width/canvas.height);gl.uniform1f(u.lens,Math.tan(26*Math.PI/180));}
 let instanceData=new Float32Array(40000);
 function draw(now){
- if(fallback){fallback({now,cells,ghosts,camera,basis:basis(),glow,showGrid,planePoint});$('cameraInfo').textContent=`${camera.angle}° PERSPECTIVE   /   ${Math.round(camera.x)}, ${Math.round(camera.y)}`;return;}
+ const voronoiSites = voronoiStrength > 0 ? selectVoronoiSites(cells, camera) : [];
+ if(fallback){fallback({now,cells,ghosts,camera,basis:basis(),glow,showGrid,planePoint,voronoiSites,voronoiStrength});$('cameraInfo').textContent=`${camera.angle}° PERSPECTIVE   /   ${Math.round(camera.x)}, ${Math.round(camera.y)}`;return;}
  const {width,height}=viewport();
  const dpr=Math.min(devicePixelRatio||1,touchInput.matches?1.4:1.6),w=Math.round(width*dpr),h=Math.round(height*dpr);
  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);}
- const b=basis();gl.disable(gl.BLEND);uploadCamera(gridProgram,gridU,b);gl.uniform1f(gridU.showGrid,showGrid);gl.drawArrays(gl.TRIANGLES,0,3);
+ const b=basis();gl.disable(gl.BLEND);uploadCamera(gridProgram,gridU,b);gl.uniform1f(gridU.showGrid,showGrid);
+ gl.uniform1f(voronoiStrengthLocation,voronoiStrength);
+ gl.uniform1i(voronoiCountLocation,voronoiSites.length);
+ for(let i=0;i<voronoiSites.length;i++){
+   siteUniformData[2*i]=voronoiSites[i].x;
+   siteUniformData[2*i+1]=voronoiSites[i].y;
+ }
+ gl.uniform2fv(voronoiSitesLocation,siteUniformData);
+ gl.drawArrays(gl.TRIANGLES,0,3);
  const total=(cells.size+ghosts.size)*3;if(instanceData.length<total)instanceData=new Float32Array(total*2);
  let n=0;for(const cell of cells){const comma=cell.indexOf(',');instanceData[n++]=Number(cell.slice(0,comma));instanceData[n++]=Number(cell.slice(comma+1));instanceData[n++]=1;}
  for(const [cell,death] of ghosts){const fade=1-(now-death)/230;if(fade<=0||cells.has(cell)){ghosts.delete(cell);continue;}const comma=cell.indexOf(',');instanceData[n++]=Number(cell.slice(0,comma));instanceData[n++]=Number(cell.slice(comma+1));instanceData[n++]=fade*.55;}
@@ -233,6 +278,7 @@ $('speed').oninput=e=>{speed=Number(e.target.value);$('speedValue').value=`${spe
 $('glow').oninput=e=>{glow=Number(e.target.value)/100;$('glowValue').value=`${e.target.value}%`;};
 $('angle').oninput=e=>{camera.angle=Number(e.target.value);$('angleValue').value=`${camera.angle}°`;};
 $('grid').onchange=e=>{showGrid=Number(e.target.checked);};
+$('voronoi').oninput=e=>{voronoiStrength=Number(e.target.value)/100;$('voronoiValue').value=`${e.target.value}%`;};
 $('pan').onclick=()=>setMode('pan');$('draw').onclick=()=>{setMode('draw');toast('Draw live cells. Select the eraser to remove them.');};
 $('erase').onclick=()=>{setMode('erase');toast('Tap or drag over cells to erase them.');};
 $('home').onclick=()=>{camera={x:0,y:0,distance:selected==='field'?DEFAULT_FIELD_DISTANCE:45,angle:45,yaw:.20};$('angle').value=45;$('angleValue').value='45°';toast('Camera recentered');};
