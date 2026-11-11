@@ -1,4 +1,5 @@
 // The same perspective scene, drawn with Canvas for browsers without WebGL.
+import { voronoiPolygon } from './voronoi.js';
 export function createCanvasRenderer(canvas){
  const ctx=canvas.getContext('2d',{alpha:false});
  const sprites=[0,1].map(v=>{
@@ -9,7 +10,7 @@ export function createCanvasRenderer(canvas){
   g.filter='blur(2px)';g.shadowBlur=24;g.shadowColor=`rgb(${rgb})`;g.fillStyle=v?'#b9b5ff':'#a5f4ff';g.fillRect(53,53,22,22);
   g.shadowBlur=0;g.filter='blur(2.5px)';g.fillStyle=v?'#dfd9ff':'#d0fdff';g.fillRect(55,55,18,18);return c;
  });
- return ({now,cells,ghosts,camera,basis:b,glow,showGrid,planePoint})=>{
+ return ({now,cells,ghosts,camera,basis:b,glow,showGrid,planePoint,voronoiSites=[],voronoiStrength=0})=>{
   const dpr=Math.min(devicePixelRatio||1,matchMedia('(pointer: coarse)').matches?1.4:1.5),w=canvas.clientWidth,h=canvas.clientHeight;
   if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
@@ -31,6 +32,31 @@ export function createCanvasRenderer(canvas){
    };
    for(let x=minX;x<=maxX;x++)line(x+.5,minY,x+.5,maxY,x%10===0);
    for(let y=minY;y<=maxY;y++)line(minX,y+.5,maxX,y+.5,y%10===0);
+  }
+  if (voronoiStrength > 0 && voronoiSites.length > 1) {
+   // Clip all regions to a compact area around the camera to avoid huge
+   // perspective projections near the horizon in the Canvas fallback.
+   const span = Math.max(80, camera.distance * 2.5);
+   const bounds = [camera.x-span,camera.y-span,camera.x+span,camera.y+span];
+   ctx.save();
+   for (let i = 0; i < voronoiSites.length; i++) {
+    const polygon = voronoiPolygon(voronoiSites, i, bounds);
+    if (polygon.length < 3) continue;
+    ctx.beginPath();
+    for (let j=0;j<polygon.length;j++) {
+     const p=screen(polygon[j][0],polygon[j][1]);
+     if (j === 0) ctx.moveTo(p[0],p[1]); else ctx.lineTo(p[0],p[1]);
+    }
+    ctx.closePath();
+    ctx.fillStyle = i % 2
+      ? 'rgba(84,51,156,' + (.055*voronoiStrength) + ')'
+      : 'rgba(34,148,184,' + (.055*voronoiStrength) + ')';
+    ctx.strokeStyle = 'rgba(91,207,240,' + (.43*voronoiStrength) + ')';
+    ctx.lineWidth = 1.25;
+    ctx.fill();
+    ctx.stroke();
+   }
+   ctx.restore();
   }
   ctx.globalCompositeOperation='lighter';
   const tile=(cell,opacity)=>{
