@@ -21,8 +21,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Check Luminous Life gestures
-        run: node --test luminous-life/tests/gestures.test.mjs
+      - name: Check Luminous Life interactions and Voronoi geometry
+        run: node --test luminous-life/tests/*.test.mjs
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
